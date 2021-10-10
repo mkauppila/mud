@@ -7,16 +7,18 @@ import (
 )
 
 type Client struct {
-	id       int
-	conn     net.Conn
-	outgoing chan string
+	id        int
+	conn      net.Conn
+	broadcast chan string
+	reply     chan string
 }
 
 func NewClient(conn net.Conn, id int) *Client {
 	client := Client{
-		id:       id,
-		conn:     conn,
-		outgoing: make(chan string),
+		id:        id,
+		conn:      conn,
+		broadcast: make(chan string),
+		reply:     make(chan string),
 	}
 	return &client
 }
@@ -29,6 +31,8 @@ func (c *Client) Listen(work chan<- Command) {
 	reader := bufio.NewReader(c.conn)
 
 	work <- Command{command: "connect", contents: "", clientId: c.id}
+	connectReply := <-c.reply
+	c.directReply(connectReply)
 
 	for {
 		line, err := reader.ReadString('\n')
@@ -38,17 +42,37 @@ func (c *Client) Listen(work chan<- Command) {
 			work <- Command{command: "disconnect", contents: line, clientId: c.id}
 			break
 		}
-		fmt.Println("->: ", line)
 		work <- Command{command: "say", contents: line, clientId: c.id}
+
+		// wait for reply to player's command
+		commandReply, ok := <-c.reply
+		if !ok {
+			break
+		}
+		c.directReply(commandReply)
 	}
 
 	fmt.Printf("Client %d disconnected (listen)\n", c.id)
 }
 
-func (c *Client) Serve() {
+func (c *Client) directReply(message string) {
+	writer := bufio.NewWriter(c.conn)
+
+	_, err := writer.WriteString(message)
+	if err != nil {
+		fmt.Println("Failed to write")
+	}
+
+	err = writer.Flush()
+	if err != nil {
+		fmt.Println("Failed to flush")
+	}
+}
+
+func (c *Client) Broadcast() {
 	writer := bufio.NewWriter(c.conn)
 	for {
-		message, ok := <-c.outgoing
+		message, ok := <-c.broadcast
 		if !ok {
 			break
 		}
@@ -78,7 +102,8 @@ func (c *Client) Read(b []byte) (n int, err error) {
 func (c *Client) Disconnect() {
 	fmt.Printf("Disconnecting %d\n", c.id)
 
-	close(c.outgoing)
+	close(c.broadcast)
+	close(c.reply)
 
 	err := c.conn.Close()
 	if err != nil {
