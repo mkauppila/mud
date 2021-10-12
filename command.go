@@ -7,7 +7,6 @@ import (
 type Command struct {
 	command  string // type disconnect, say
 	contents string
-	clientId int
 }
 
 func ParseCommand(message string) Command {
@@ -18,16 +17,11 @@ func ParseCommand(message string) Command {
 
 	switch command {
 	case "say":
-		return Command{"say", message[index+1:], 0}
+		return Command{"say", message[index+1:]}
 	case "go":
 		// TODO: should parse the next part is north, west, east, south
-		return Command{"go", message[index+1:], 0}
-	case "connect":
-		return Command{command: "connect", contents: "", clientId: 0}
-	case "disconnect":
-		return Command{command: "disconnect", contents: message, clientId: 0}
-
+		return Command{"go", message[index+1:]}
 	}
 
-	return Command{"unknown", message, 0}
+	return Command{"unknown", message}
 }
