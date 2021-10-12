@@ -1,4 +1,4 @@
-package main
+package mud
 
 import "testing"
 
@@ -7,8 +7,8 @@ func TestCommandParsing(t *testing.T) {
 		msg  string
 		want Command
 	}{
-		{msg: "say hello world", want: Command{"say", "hello world", 0}},
-		{msg: "go west", want: Command{"go", "west", 0}},
+		{msg: "say hello world", want: Command{"say", "hello world"}},
+		{msg: "go west", want: Command{"go", "west"}},
 	}
 
 	for i, tc := range testCases {

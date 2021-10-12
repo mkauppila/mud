@@ -1,4 +1,4 @@
-package main
+package mud
 
 type ServerAction func(server *Server) error
 type CommandAction func(command Command, clientId int) ServerAction

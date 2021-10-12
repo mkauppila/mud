@@ -6,7 +6,7 @@
 *.dylib
 
 # Main binary on linux/macos
-mud
+# mud
 
 # VS Code workspace confs
 .vscode/

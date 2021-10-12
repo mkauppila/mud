@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net"
+
+	mud "github.com/mkauppila/mud/mud"
 )
 
 func main() {
@@ -15,7 +17,7 @@ func main() {
 	}
 	defer ln.Close()
 
-	server := NewServer()
+	server := mud.NewServer()
 	go server.Run()
 
 	for {
