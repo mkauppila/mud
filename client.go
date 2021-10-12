@@ -13,6 +13,8 @@ type Client struct {
 	reply     chan string
 }
 
+// TODO: client id should be an uuid
+// TODO: pass in the command parser
 func NewClient(conn net.Conn, id int) *Client {
 	client := Client{
 		id:        id,
@@ -23,26 +25,79 @@ func NewClient(conn net.Conn, id int) *Client {
 	return &client
 }
 
-// work: send parsed and formed message from the
-// the clent to the server to be processed? Needs to which
-// client send it and when (server tick will be handled separately)
+type ServerAction func(server *Server) error
+type CommandAction func(command Command) ServerAction
 
-func (c *Client) Listen(work chan<- Command) {
+func ConnectCommandAction(command Command) ServerAction {
+	return func(s *Server) error {
+		for _, c := range s.clients {
+			if c.id == command.clientId {
+				c.reply <- "You joined\n"
+			} else {
+				c.broadcast <- fmt.Sprintf("Client %d joined!\n", command.clientId)
+			}
+		}
+		return nil
+	}
+}
+
+func DisconnectCommandAction(command Command) ServerAction {
+	return func(s *Server) error {
+		for i, c := range s.clients {
+			if c.id == command.clientId {
+				c.reply <- "You are disconnecting"
+				c.Disconnect()
+				// update the clients list
+				s.clients[i] = s.clients[len(s.clients)-1]
+				s.clients = s.clients[:len(s.clients)-1]
+			} else {
+				c.broadcast <- fmt.Sprintf("Client %d disconnecting...\n", command.clientId)
+			}
+		}
+		return nil
+	}
+}
+
+// Needs client id
+func SayCommandAction(command Command) ServerAction {
+	return func(s *Server) error {
+		for _, c := range s.clients {
+			if c.id == command.clientId {
+				c.reply <- fmt.Sprintf("You said %s\n", command.contents)
+			} else {
+				c.broadcast <- fmt.Sprintf("They said %s\n", command.contents)
+			}
+		}
+		return nil
+	}
+}
+
+func (c *Client) Listen(work chan<- ServerAction) {
 	reader := bufio.NewReader(c.conn)
 
-	work <- Command{command: "connect", contents: "", clientId: c.id}
+	work <- ConnectCommandAction(Command{command: "connect", contents: "", clientId: c.id})
 	connectReply := <-c.reply
 	c.directReply(connectReply)
+
+	// m := map[string]CommandAction{}
+	// m["say"] = SayCommandAction
+	// m["connect"] = ConnectCommandAction
+	// m["disconnect"] = DisconnectCommandAction
+	// fmt.Println(m)
 
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
 			// disconnect command tells the server to clean up this client
 			// the break here breaks the Listen loop
-			work <- Command{command: "disconnect", contents: line, clientId: c.id}
+			work <- DisconnectCommandAction(Command{command: "disconnect", contents: line, clientId: c.id})
 			break
 		}
-		work <- Command{command: "say", contents: line, clientId: c.id}
+
+		command := ParseCommand(line)
+		command.clientId = c.id
+
+		work <- SayCommandAction(command)
 
 		// wait for reply to player's command
 		commandReply, ok := <-c.reply
@@ -91,6 +146,7 @@ func (c *Client) Broadcast() {
 	fmt.Printf("Client %d disconnected (server)\n", c.id)
 }
 
+/*
 func (c *Client) Write(b []byte) (n int, err error) {
 	return c.conn.Write(b)
 }
@@ -98,6 +154,7 @@ func (c *Client) Write(b []byte) (n int, err error) {
 func (c *Client) Read(b []byte) (n int, err error) {
 	return c.conn.Read(b)
 }
+*/
 
 func (c *Client) Disconnect() {
 	fmt.Printf("Disconnecting %d\n", c.id)
