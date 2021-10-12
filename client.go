@@ -15,8 +15,7 @@ type Client struct {
 }
 
 // TODO: client id should be an uuid
-// TODO: pass in the command parser
-func NewClient(conn net.Conn, id int, commander *CommandHandler) *Client {
+func NewClient(conn net.Conn, id int, commander *CommandHandler) Client {
 	client := Client{
 		id:        id,
 		conn:      conn,
@@ -24,7 +23,7 @@ func NewClient(conn net.Conn, id int, commander *CommandHandler) *Client {
 		reply:     make(chan string),
 		commander: commander,
 	}
-	return &client
+	return client
 }
 
 func (c *Client) Listen(work chan<- ServerAction) {
@@ -91,16 +90,6 @@ func (c *Client) Broadcast() {
 
 	fmt.Printf("Client %d disconnected (server)\n", c.id)
 }
-
-/*
-func (c *Client) Write(b []byte) (n int, err error) {
-	return c.conn.Write(b)
-}
-
-func (c *Client) Read(b []byte) (n int, err error) {
-	return c.conn.Read(b)
-}
-*/
 
 func (c *Client) Disconnect() {
 	fmt.Printf("Disconnecting %d\n", c.id)

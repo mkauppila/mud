@@ -8,14 +8,14 @@ import (
 
 type Server struct {
 	work      chan ServerAction
-	clients   []*Client // might not need to be a pointer, slices are pointer-like?
+	clients   []Client
 	commander *CommandHandler
 }
 
 func NewServer() Server {
 	return Server{
 		work:      make(chan ServerAction),
-		clients:   []*Client{},
+		clients:   []Client{},
 		commander: NewCommandHandler(),
 	}
 }
