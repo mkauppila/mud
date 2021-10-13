@@ -39,6 +39,7 @@ func (c *Client) Listen(work chan<- ServerAction) {
 			// disconnect command tells the server to clean up this client
 			// the break here breaks the Listen loop
 			work <- c.commander.DisconnectAction(c.id)
+			<-c.reply
 			break
 		}
 
