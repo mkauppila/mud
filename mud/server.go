@@ -3,28 +3,43 @@ package mud
 import (
 	"fmt"
 	"net"
+	"sync"
 	"time"
 )
 
 type Server struct {
-	work      chan ServerAction
-	clients   []Client
-	commander *CommandHandler
+	work         chan ServerAction
+	clientsMutex sync.Mutex
+	clients      []Client
+	commander    *CommandHandler
 }
 
 func NewServer() Server {
 	return Server{
-		work:      make(chan ServerAction),
-		clients:   []Client{},
-		commander: NewCommandHandler(),
+		work:         make(chan ServerAction),
+		clientsMutex: sync.Mutex{},
+		clients:      []Client{},
+		commander:    NewCommandHandler(),
 	}
 }
 
-func (s *Server) AddNewConnection(conn net.Conn) {
+func (s *Server) AddNewClient(conn net.Conn) {
+	s.clientsMutex.Lock()
+	defer s.clientsMutex.Unlock()
+
 	client := NewClient(conn, len(s.clients), s.commander)
+	s.clients = append(s.clients, client)
+
 	go client.Listen(s.work)
 	go client.Broadcast()
-	s.clients = append(s.clients, client)
+}
+
+func (s *Server) removeClientAtIndex(index int) {
+	s.clientsMutex.Lock()
+	defer s.clientsMutex.Unlock()
+
+	s.clients[index] = s.clients[len(s.clients)-1]
+	s.clients = s.clients[:len(s.clients)-1]
 }
 
 func (s *Server) Run() {

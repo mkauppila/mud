@@ -21,9 +21,8 @@ func DisconnectCommandAction(command Command, clientId int) ServerAction {
 			if c.id == clientId {
 				c.reply <- "You are disconnecting"
 				c.Disconnect()
-				// update the clients list
-				s.clients[i] = s.clients[len(s.clients)-1]
-				s.clients = s.clients[:len(s.clients)-1]
+
+				s.removeClientAtIndex(i)
 			} else {
 				c.broadcast <- fmt.Sprintf("Client %d disconnecting...\n", clientId)
 			}
