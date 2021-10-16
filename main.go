@@ -26,7 +26,7 @@ func main() {
 			panic(err)
 		}
 
-		server.AddNewConnection(conn)
+		go server.AddNewClient(conn)
 	}
 
 	// server.Disconnect()
