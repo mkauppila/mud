@@ -12,16 +12,19 @@ type Client struct {
 	broadcast chan string
 	reply     chan string
 	commander *CommandHandler
+
+	Character *Character
 }
 
 // TODO: client id should be an uuid
-func NewClient(conn net.Conn, id int, commander *CommandHandler) Client {
+func NewClient(conn net.Conn, id int, commander *CommandHandler, character *Character) Client {
 	client := Client{
 		id:        id,
 		conn:      conn,
 		broadcast: make(chan string),
 		reply:     make(chan string),
 		commander: commander,
+		Character: character,
 	}
 	return client
 }

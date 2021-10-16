@@ -12,6 +12,7 @@ type Server struct {
 	clientsMutex sync.Mutex
 	clients      []Client
 	commander    *CommandHandler
+	world        *World
 }
 
 func NewServer() Server {
@@ -20,6 +21,7 @@ func NewServer() Server {
 		clientsMutex: sync.Mutex{},
 		clients:      []Client{},
 		commander:    NewCommandHandler(),
+		world:        NewWorld(),
 	}
 }
 
@@ -27,7 +29,7 @@ func (s *Server) AddNewClient(conn net.Conn) {
 	s.clientsMutex.Lock()
 	defer s.clientsMutex.Unlock()
 
-	client := NewClient(conn, len(s.clients), s.commander)
+	client := NewClient(conn, len(s.clients), s.commander, NewCharacter())
 	s.clients = append(s.clients, client)
 
 	go client.Listen(s.actions)
