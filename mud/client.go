@@ -26,10 +26,10 @@ func NewClient(conn net.Conn, id int, commander *CommandHandler) Client {
 	return client
 }
 
-func (c *Client) Listen(work chan<- ServerAction) {
+func (c *Client) Listen(actions chan<- ServerAction) {
 	reader := bufio.NewReader(c.conn)
 
-	work <- c.commander.ConnectAction(c.id)
+	actions <- c.commander.ConnectAction(c.id)
 	connectReply := <-c.reply
 	c.directReply(connectReply)
 
@@ -38,12 +38,12 @@ func (c *Client) Listen(work chan<- ServerAction) {
 		if err != nil {
 			// disconnect command tells the server to clean up this client
 			// the break here breaks the Listen loop
-			work <- c.commander.DisconnectAction(c.id)
+			actions <- c.commander.DisconnectAction(c.id)
 			<-c.reply
 			break
 		}
 
-		work <- c.commander.InputToAction(line, c.id)
+		actions <- c.commander.InputToAction(line, c.id)
 
 		// Wait for player's reply
 		commandReply, ok := <-c.reply

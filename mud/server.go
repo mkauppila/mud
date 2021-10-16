@@ -8,7 +8,7 @@ import (
 )
 
 type Server struct {
-	work         chan ServerAction
+	actions      chan ServerAction
 	clientsMutex sync.Mutex
 	clients      []Client
 	commander    *CommandHandler
@@ -16,7 +16,7 @@ type Server struct {
 
 func NewServer() Server {
 	return Server{
-		work:         make(chan ServerAction),
+		actions:      make(chan ServerAction),
 		clientsMutex: sync.Mutex{},
 		clients:      []Client{},
 		commander:    NewCommandHandler(),
@@ -30,7 +30,7 @@ func (s *Server) AddNewClient(conn net.Conn) {
 	client := NewClient(conn, len(s.clients), s.commander)
 	s.clients = append(s.clients, client)
 
-	go client.Listen(s.work)
+	go client.Listen(s.actions)
 	go client.Broadcast()
 }
 
@@ -49,9 +49,9 @@ func (s *Server) Run() {
 	var actions []ServerAction
 	for {
 		select {
-		case command, ok := <-s.work:
+		case command, ok := <-s.actions:
 			if !ok {
-				panic("work queue closed")
+				panic("actions channel closed")
 			}
 			actions = append(actions, command)
 		case _, ok := <-ticker.C:
@@ -59,13 +59,13 @@ func (s *Server) Run() {
 				panic("ticker closed")
 			}
 
-			s.processCommands(actions)
+			s.processServerActions(actions)
 			actions = make([]ServerAction, 0)
 		}
 	}
 }
 
-func (s *Server) processCommands(actions []ServerAction) {
+func (s *Server) processServerActions(actions []ServerAction) {
 	for _, action := range actions {
 		err := action(s)
 		if err != nil {
