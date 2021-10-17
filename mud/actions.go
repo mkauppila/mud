@@ -91,30 +91,31 @@ func GoCommandAction(command Command, clientId uuid.UUID) ServerAction {
 }
 
 func StartSmokingCommandAction(command Command, clientId uuid.UUID) ServerAction {
-	return func(s *Server) error {
-		client := s.clients[clientId]
+	return func(s *Server) error { // so basically just giving the world should be enough!
+		ch := s.clients[clientId].Character
+		// or ch := s.world.characters[fill in the blanks]
 
 		switch strings.TrimSpace(command.contents) {
 		case "start":
-			client.Character.SetState("smoking")
-			client.reply <- fmt.Sprint("You started to smoke your pipe\n", command.contents)
+			ch.SetState("smoking")
+			ch.Reply("You started to smoke your pipe\n")
 
-			others := s.world.OtherCharactersInRoom(client.Character)
+			others := s.world.OtherCharactersInRoom(ch)
 			for _, ch := range others {
 				c := s.clients[ch.id]
 				c.broadcast <- fmt.Sprintf("%s started to smoke a pipe\n", c.Character.name)
 			}
 		case "stop":
-			client.Character.SetState("idle")
-			client.reply <- fmt.Sprint("You stopped smoking your pipe\n", command.contents)
+			ch.SetState("idle")
+			ch.Reply("You stopped smoking your pipe\n")
 
-			others := s.world.OtherCharactersInRoom(client.Character)
+			others := s.world.OtherCharactersInRoom(ch)
 			for _, ch := range others {
 				c := s.clients[ch.id]
 				c.broadcast <- fmt.Sprintf("%s stopped smoking a pipe\n", c.Character.name)
 			}
 		default:
-			client.reply <- fmt.Sprintln("You either start or stop")
+			ch.Reply(fmt.Sprintln("You either start or stop"))
 		}
 
 		return nil

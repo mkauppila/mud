@@ -18,7 +18,6 @@ type Client struct {
 	Character *Character
 }
 
-// TODO: client id should be an uuid
 func NewClient(conn net.Conn, id uuid.UUID, commander *CommandHandler, character *Character) Client {
 	client := Client{
 		id:        id,
@@ -28,6 +27,14 @@ func NewClient(conn net.Conn, id uuid.UUID, commander *CommandHandler, character
 		commander: commander,
 		Character: character,
 	}
+
+	client.Character.Reply = func(message string) {
+		client.reply <- message
+	}
+	client.Character.Broadcast = func(message string) {
+		client.broadcast <- message
+	}
+
 	return client
 }
 

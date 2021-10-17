@@ -1,7 +1,6 @@
 package mud
 
 import (
-	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -83,5 +82,5 @@ func (s *Server) processServerActions(actions []ServerAction) {
 
 	s.world.UpdateCharacterStates(time.Second)
 
-	fmt.Println("All actions processed for this tick")
+	// fmt.Println("All actions processed for this tick")
 }

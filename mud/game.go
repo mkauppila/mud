@@ -13,15 +13,18 @@ type Location struct {
 }
 
 type Character struct {
-	id             uuid.UUID // same as clients uuid
+	id             uuid.UUID // same as client uuid
 	health, attack int
 	name           string
 	Location
 
-	currentState State
+	Reply     func(string)
+	Broadcast func(string)
+
+	state State
 }
 
-func NewCharacter(id uuid.UUID) *Character {
+func NewCharacter(id uuid.UUID /*, reply func(string), broadcast func(string)*/) *Character {
 	names := []string{"Matt", "John", "Ugruk", "Sonya", "Miraboile"}
 	ch := &Character{
 		id:       id,
@@ -37,15 +40,15 @@ func NewCharacter(id uuid.UUID) *Character {
 }
 
 func (c *Character) Tick(timeStep time.Duration) {
-	c.currentState.Tick(c, timeStep)
+	c.state.Tick(c, timeStep)
 }
 
 func (c *Character) SetState(state CharacterState) {
 	switch state {
 	case idle:
-		c.currentState = CreateIdleState()
+		c.state = CreateIdleState()
 	case smoking:
-		c.currentState = CreateSmokingtate()
+		c.state = CreateSmokingPipeState()
 	default:
 		fmt.Printf("unknown state: %s", state)
 	}
@@ -75,22 +78,31 @@ func CreateIdleState() State {
 		timeLeft:    time.Second, // is not needed
 		description: "X is standing idle",
 		function: func(ch *Character, timeStep time.Duration) {
-			fmt.Printf("%s is standing idle\n", ch.name)
+			// This is basically a no-op
+			// fmt.Printf("%s is standing idle\n", ch.name)
 		},
 	}
 }
 
-func CreateSmokingtate() State {
+func CreateSmokingPipeState() State {
 	return State{
 		state:       smoking,
-		timeLeft:    time.Second,
-		description: "X is smoking a pipe", // this could also be a function based on character struct
+		timeLeft:    time.Second * 5,
+		description: "X is smoking a pipe",
 		function: func(ch *Character, timeStep time.Duration) {
 			fmt.Printf("%s is smoking a pipe\n", ch.name)
-			// timeLeft - time.duration
-			// if timeLeft < 0:
-			//   go to next state setState("idle")
-			// do the state logic what ever that is!
+
+			// TODO: needs the world for communciating to other players
+
+			ch.state.timeLeft -= timeStep
+			if ch.state.timeLeft > 0 {
+				fmt.Println("time left: ", ch.state.timeLeft)
+
+				ch.Broadcast("The pipe puffs\n")
+			} else {
+				ch.Broadcast("You run out of tobacco and stopped smoking the pipe\n")
+				ch.SetState("idle")
+			}
 		},
 	}
 }
