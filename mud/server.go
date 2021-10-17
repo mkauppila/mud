@@ -21,7 +21,7 @@ func NewServer() Server {
 	return Server{
 		actions:      make(chan ServerAction),
 		clientsMutex: sync.Mutex{},
-		clients:      []Client{},
+		clients:      make(map[uuid.UUID]Client),
 		commander:    NewCommandHandler(),
 		world:        NewWorld(),
 	}
@@ -31,13 +31,13 @@ func (s *Server) AddNewClient(conn net.Conn) {
 	s.clientsMutex.Lock()
 	defer s.clientsMutex.Unlock()
 
-	s.clients = append(s.clients, client)
 	clientId, err := uuid.NewRandom()
 	if err != nil {
 		panic(err)
 	}
 
 	client := NewClient(conn, clientId, s.commander, NewCharacter())
+	s.clients[clientId] = client
 
 	go client.Listen(s.actions)
 	go client.Broadcast()
@@ -47,8 +47,7 @@ func (s *Server) removeClientAtIndex(clientId uuid.UUID) {
 	s.clientsMutex.Lock()
 	defer s.clientsMutex.Unlock()
 
-	s.clients[index] = s.clients[len(s.clients)-1]
-	s.clients = s.clients[:len(s.clients)-1]
+	delete(s.clients, clientId)
 }
 
 func (s *Server) Run() {
