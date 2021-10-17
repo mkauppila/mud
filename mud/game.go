@@ -2,6 +2,8 @@ package mud
 
 import (
 	"math/rand"
+
+	"github.com/google/uuid"
 )
 
 type Location struct {
@@ -9,14 +11,16 @@ type Location struct {
 }
 
 type Character struct {
+	id             uuid.UUID // same as clients uuid
 	health, attack int
 	name           string
 	Location
 }
 
-func NewCharacter() *Character {
+func NewCharacter(id uuid.UUID) *Character {
 	names := []string{"Matt", "John", "Ugruk", "Sonya", "Miraboile"}
 	return &Character{
+		id:       id,
 		health:   30,
 		attack:   1,
 		name:     names[rand.Intn(len(names))],
@@ -33,7 +37,7 @@ type World struct {
 	rooms      map[Location][]Room
 }
 
-func (w World) InsertCharacterOnJoin(character *Character) {
+func (w World) InsertCharacterOnConnect(character *Character) {
 	loc := character.Location
 
 	list, ok := w.characters[loc]
@@ -43,6 +47,33 @@ func (w World) InsertCharacterOnJoin(character *Character) {
 		list = append(list, character)
 		w.characters[loc] = list
 	}
+}
+
+func (w World) OtherCharactersInRoom(currentCharacter *Character) []*Character {
+	inRoom := w.characters[currentCharacter.Location]
+
+	var others []*Character
+	for _, ch := range inRoom {
+		if ch.id != currentCharacter.id {
+			others = append(others, ch)
+		}
+	}
+	return others
+}
+
+func (w World) RemoveCharacterOnDisconnect(ch Character) {
+	delete(w.characters, ch.Location)
+}
+
+func (w World) CanCharactorMoveInDirection(character *Character, direction string) bool {
+	// TODO check if movement is allowed
+	// if the rooms map has a room at this coord, then it's okay
+	// otherwise block the movement here and modify the players respond
+	// -> "Ouch, it seems the world has some boundaries"
+
+	// There's no rooms or boundaries yet so it's always allowed
+
+	return true
 }
 
 func (w World) MoveCharacterInDirection(character *Character, direction string) {

@@ -1,11 +1,16 @@
 package mud
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/uuid"
+)
 
 func TestMovingCharacter(t *testing.T) {
 	world := NewWorld()
-	character := NewCharacter()
-	world.InsertCharacterOnJoin(character)
+	id, _ := uuid.NewRandom()
+	character := NewCharacter(id)
+	world.InsertCharacterOnConnect(character)
 
 	ch := world.characters[Location{X: 0, Y: 0}][0]
 	if ch.name != character.name {

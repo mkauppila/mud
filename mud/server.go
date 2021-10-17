@@ -36,7 +36,7 @@ func (s *Server) AddNewClient(conn net.Conn) {
 		panic(err)
 	}
 
-	client := NewClient(conn, clientId, s.commander, NewCharacter())
+	client := NewClient(conn, clientId, s.commander, NewCharacter(clientId))
 	s.clients[clientId] = client
 
 	go client.Listen(s.actions)
