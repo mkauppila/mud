@@ -5,12 +5,14 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Server struct {
 	actions      chan ServerAction
 	clientsMutex sync.Mutex
-	clients      []Client
+	clients      map[uuid.UUID]Client
 	commander    *CommandHandler
 	world        *World
 }
@@ -29,14 +31,19 @@ func (s *Server) AddNewClient(conn net.Conn) {
 	s.clientsMutex.Lock()
 	defer s.clientsMutex.Unlock()
 
-	client := NewClient(conn, len(s.clients), s.commander, NewCharacter())
 	s.clients = append(s.clients, client)
+	clientId, err := uuid.NewRandom()
+	if err != nil {
+		panic(err)
+	}
+
+	client := NewClient(conn, clientId, s.commander, NewCharacter())
 
 	go client.Listen(s.actions)
 	go client.Broadcast()
 }
 
-func (s *Server) removeClientAtIndex(index int) {
+func (s *Server) removeClientAtIndex(clientId uuid.UUID) {
 	s.clientsMutex.Lock()
 	defer s.clientsMutex.Unlock()
 

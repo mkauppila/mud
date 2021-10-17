@@ -1,8 +1,12 @@
 package mud
 
-import "fmt"
+import (
+	"fmt"
 
-func ConnectCommandAction(command Command, clientId int) ServerAction {
+	"github.com/google/uuid"
+)
+
+func ConnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
 		for _, c := range s.clients {
 			if c.id == clientId {
@@ -16,7 +20,7 @@ func ConnectCommandAction(command Command, clientId int) ServerAction {
 	}
 }
 
-func DisconnectCommandAction(command Command, clientId int) ServerAction {
+func DisconnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
 		for i, c := range s.clients {
 			if c.id == clientId {
@@ -32,7 +36,7 @@ func DisconnectCommandAction(command Command, clientId int) ServerAction {
 	}
 }
 
-func UnknownCommandAction(command Command, clientId int) ServerAction {
+func UnknownCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
 		for _, c := range s.clients {
 			if c.id == clientId {
@@ -43,7 +47,7 @@ func UnknownCommandAction(command Command, clientId int) ServerAction {
 	}
 }
 
-func SayCommandAction(command Command, clientId int) ServerAction {
+func SayCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
 		for _, c := range s.clients {
 			if c.id == clientId {
@@ -56,7 +60,7 @@ func SayCommandAction(command Command, clientId int) ServerAction {
 	}
 }
 
-func GoCommandAction(command Command, clientId int) ServerAction {
+func GoCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
 		for _, c := range s.clients {
 			if c.id == clientId {

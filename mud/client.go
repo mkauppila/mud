@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+
+	"github.com/google/uuid"
 )
 
 type Client struct {
-	id        int
+	id        uuid.UUID
 	conn      net.Conn
 	broadcast chan string
 	reply     chan string
@@ -17,7 +19,7 @@ type Client struct {
 }
 
 // TODO: client id should be an uuid
-func NewClient(conn net.Conn, id int, commander *CommandHandler, character *Character) Client {
+func NewClient(conn net.Conn, id uuid.UUID, commander *CommandHandler, character *Character) Client {
 	client := Client{
 		id:        id,
 		conn:      conn,
