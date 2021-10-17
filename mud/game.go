@@ -1,7 +1,9 @@
 package mud
 
 import (
+	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -15,16 +17,81 @@ type Character struct {
 	health, attack int
 	name           string
 	Location
+
+	currentState State
 }
 
 func NewCharacter(id uuid.UUID) *Character {
 	names := []string{"Matt", "John", "Ugruk", "Sonya", "Miraboile"}
-	return &Character{
+	ch := &Character{
 		id:       id,
 		health:   30,
 		attack:   1,
 		name:     names[rand.Intn(len(names))],
 		Location: Location{X: 0, Y: 0},
+	}
+
+	ch.SetState("idle")
+
+	return ch
+}
+
+func (c *Character) Tick(timeStep time.Duration) {
+	c.currentState.Tick(c, timeStep)
+}
+
+func (c *Character) SetState(state CharacterState) {
+	switch state {
+	case idle:
+		c.currentState = CreateIdleState()
+	case smoking:
+		c.currentState = CreateSmokingtate()
+	default:
+		fmt.Printf("unknown state: %s", state)
+	}
+}
+
+type CharacterState string
+
+const (
+	idle    CharacterState = "idle"
+	smoking CharacterState = "smoking"
+)
+
+type State struct {
+	state       CharacterState
+	timeLeft    time.Duration
+	description string
+	function    func(*Character, time.Duration)
+}
+
+func (state *State) Tick(ch *Character, timeStep time.Duration) {
+	state.function(ch, timeStep)
+}
+
+func CreateIdleState() State {
+	return State{
+		state:       idle,
+		timeLeft:    time.Second, // is not needed
+		description: "X is standing idle",
+		function: func(ch *Character, timeStep time.Duration) {
+			fmt.Printf("%s is standing idle\n", ch.name)
+		},
+	}
+}
+
+func CreateSmokingtate() State {
+	return State{
+		state:       smoking,
+		timeLeft:    time.Second,
+		description: "X is smoking a pipe", // this could also be a function based on character struct
+		function: func(ch *Character, timeStep time.Duration) {
+			fmt.Printf("%s is smoking a pipe\n", ch.name)
+			// timeLeft - time.duration
+			// if timeLeft < 0:
+			//   go to next state setState("idle")
+			// do the state logic what ever that is!
+		},
 	}
 }
 
@@ -35,6 +102,13 @@ type Room struct {
 type World struct {
 	characters map[Location][]*Character
 	rooms      map[Location][]Room
+}
+
+func NewWorld() *World {
+	return &World{
+		characters: make(map[Location][]*Character),
+		rooms:      make(map[Location][]Room),
+	}
 }
 
 func (w World) InsertCharacterOnConnect(character *Character) {
@@ -72,7 +146,6 @@ func (w World) CanCharactorMoveInDirection(character *Character, direction strin
 	// -> "Ouch, it seems the world has some boundaries"
 
 	// There's no rooms or boundaries yet so it's always allowed
-
 	return true
 }
 
@@ -124,9 +197,13 @@ func (w World) MoveCharacterInDirection(character *Character, direction string) 
 	}
 }
 
-func NewWorld() *World {
-	return &World{
-		characters: make(map[Location][]*Character),
-		rooms:      make(map[Location][]Room),
+func (w World) UpdateCharacterStates(timeStep time.Duration) {
+	var allChs []*Character
+	for _, c := range w.characters {
+		allChs = append(allChs, c...)
+	}
+
+	for _, ch := range allChs {
+		ch.Tick(timeStep)
 	}
 }

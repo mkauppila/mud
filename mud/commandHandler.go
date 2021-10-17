@@ -12,8 +12,9 @@ type CommandHandler struct {
 func NewCommandHandler() *CommandHandler {
 	commander := &CommandHandler{
 		commandActions: map[string]CommandAction{
-			"say": SayCommandAction,
-			"go":  GoCommandAction,
+			"say":   SayCommandAction,
+			"go":    GoCommandAction,
+			"smoke": StartSmokingCommandAction,
 		},
 	}
 

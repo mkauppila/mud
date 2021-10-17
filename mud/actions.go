@@ -2,6 +2,7 @@ package mud
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -11,6 +12,7 @@ func ConnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 		client := s.clients[clientId]
 		s.world.InsertCharacterOnConnect(client.Character)
 		client.reply <- "You joined\n"
+		client.Character.SetState("idle")
 
 		others := s.world.OtherCharactersInRoom(client.Character)
 		for _, ch := range others {
@@ -82,6 +84,37 @@ func GoCommandAction(command Command, clientId uuid.UUID) ServerAction {
 				c := s.clients[ch.id]
 				c.broadcast <- fmt.Sprintf("%s entered from %s\n", c.Character.name, command.contents)
 			}
+		}
+
+		return nil
+	}
+}
+
+func StartSmokingCommandAction(command Command, clientId uuid.UUID) ServerAction {
+	return func(s *Server) error {
+		client := s.clients[clientId]
+
+		switch strings.TrimSpace(command.contents) {
+		case "start":
+			client.Character.SetState("smoking")
+			client.reply <- fmt.Sprint("You started to smoke your pipe\n", command.contents)
+
+			others := s.world.OtherCharactersInRoom(client.Character)
+			for _, ch := range others {
+				c := s.clients[ch.id]
+				c.broadcast <- fmt.Sprintf("%s started to smoke a pipe\n", c.Character.name)
+			}
+		case "stop":
+			client.Character.SetState("idle")
+			client.reply <- fmt.Sprint("You stopped smoking your pipe\n", command.contents)
+
+			others := s.world.OtherCharactersInRoom(client.Character)
+			for _, ch := range others {
+				c := s.clients[ch.id]
+				c.broadcast <- fmt.Sprintf("%s stopped smoking a pipe\n", c.Character.name)
+			}
+		default:
+			client.reply <- fmt.Sprintln("You either start or stop")
 		}
 
 		return nil

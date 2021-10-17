@@ -81,5 +81,7 @@ func (s *Server) processServerActions(actions []ServerAction) {
 		}
 	}
 
+	s.world.UpdateCharacterStates(time.Second)
+
 	fmt.Println("All actions processed for this tick")
 }

@@ -37,6 +37,8 @@ func ParseCommand(message string) Command {
 			message = "west"
 		}
 		return Command{"go", message}
+	case "smoke":
+		return Command{"smoke", message[index+1:]}
 	}
 
 	return Command{"unknown", message}
