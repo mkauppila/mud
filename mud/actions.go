@@ -2,7 +2,6 @@ package mud
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/google/uuid"
 )
@@ -10,15 +9,18 @@ import (
 func ConnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
 		client := s.clients[clientId]
-		s.world.InsertCharacterOnConnect(client.Character)
-		client.reply <- "You joined\n"
-		client.Character.SetState("idle")
+		ch := client.Character
 
-		others := s.world.OtherCharactersInRoom(client.Character)
-		for _, ch := range others {
-			c := s.clients[ch.id]
-			c.broadcast <- fmt.Sprintf("%v joined!\n", c.Character.name)
-		}
+		s.world.InsertCharacterOnConnect(ch)
+
+		ch.Reply(fmt.Sprintf("hello %s\n", ch.name))
+		ch.SetState("idle")
+
+		s.world.BroadcastToOtherCharactersInRoom(
+			ch,
+			fmt.Sprintf("%v joined!\n", ch.name),
+		)
+
 		return nil
 	}
 }
@@ -32,19 +34,19 @@ func DisconnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 		client.Disconnect()
 		s.removeClientAtIndex(client.id)
 
-		others := s.world.OtherCharactersInRoom(client.Character)
-		for _, ch := range others {
-			c := s.clients[ch.id]
-			c.broadcast <- fmt.Sprintf("%v disconnecting...\n", c.Character.name)
-		}
+		s.world.BroadcastToOtherCharactersInRoom(
+			client.Character,
+			fmt.Sprintf("%v disconnecting...\n", client.Character.name),
+		)
+
 		return nil
 	}
 }
 
 func UnknownCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
-		client := s.clients[clientId]
-		client.reply <- fmt.Sprintf("What is %s?\n", command.contents)
+		ch := s.world.getCharacter(clientId)
+		ch.Reply(fmt.Sprintf("What is %s?\n", command.contents))
 
 		return nil
 	}
@@ -52,14 +54,13 @@ func UnknownCommandAction(command Command, clientId uuid.UUID) ServerAction {
 
 func SayCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
-		client := s.clients[clientId]
-		client.reply <- fmt.Sprintf("You said %s\n", command.contents)
+		ch := s.world.getCharacter(clientId)
+		ch.Reply(fmt.Sprintf("You said %s\n", command.contents))
 
-		others := s.world.OtherCharactersInRoom(client.Character)
-		for _, ch := range others {
-			c := s.clients[ch.id]
-			c.broadcast <- fmt.Sprintf("%s said %s\n", c.Character.name, command.contents)
-		}
+		s.world.BroadcastToOtherCharactersInRoom(
+			ch,
+			fmt.Sprintf("%s said %s\n", ch.name, command.contents),
+		)
 
 		return nil
 	}
@@ -67,23 +68,21 @@ func SayCommandAction(command Command, clientId uuid.UUID) ServerAction {
 
 func GoCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
-		client := s.clients[clientId]
+		ch := s.world.getCharacter(clientId)
 
-		if s.world.CanCharactorMoveInDirection(client.Character, command.contents) {
-			others := s.world.OtherCharactersInRoom(client.Character)
-			for _, ch := range others {
-				c := s.clients[ch.id]
-				c.broadcast <- fmt.Sprintf("%s moved to %s\n", c.Character.name, command.contents)
-			}
+		if s.world.CanCharactorMoveInDirection(ch, command.contents) {
+			s.world.BroadcastToOtherCharactersInRoom(
+				ch,
+				fmt.Sprintf("%s moved to %s\n", ch.name, command.contents),
+			)
 
-			s.world.MoveCharacterInDirection(client.Character, command.contents)
-			client.reply <- fmt.Sprintf("You move to %s\n", command.contents)
+			s.world.MoveCharacterInDirection(ch, command.contents)
+			ch.Reply(fmt.Sprintf("You move to %s\n", command.contents))
 
-			others = s.world.OtherCharactersInRoom(client.Character)
-			for _, ch := range others {
-				c := s.clients[ch.id]
-				c.broadcast <- fmt.Sprintf("%s entered from %s\n", c.Character.name, command.contents)
-			}
+			s.world.BroadcastToOtherCharactersInRoom(
+				ch,
+				fmt.Sprintf("%s moved to %s\n", ch.name, command.contents),
+			)
 		}
 
 		return nil
@@ -91,29 +90,34 @@ func GoCommandAction(command Command, clientId uuid.UUID) ServerAction {
 }
 
 func StartSmokingCommandAction(command Command, clientId uuid.UUID) ServerAction {
-	return func(s *Server) error { // so basically just giving the world should be enough!
-		ch := s.clients[clientId].Character
-		// or ch := s.world.characters[fill in the blanks]
+	return func(s *Server) error {
+		world := s.world
 
-		switch strings.TrimSpace(command.contents) {
+		ch := world.getCharacter(clientId)
+		if ch == nil {
+			return fmt.Errorf("no character for id %s", clientId)
+		}
+		fmt.Print(ch)
+
+		switch command.contents {
 		case "start":
 			ch.SetState("smoking")
 			ch.Reply("You started to smoke your pipe\n")
 
-			others := s.world.OtherCharactersInRoom(ch)
-			for _, ch := range others {
-				c := s.clients[ch.id]
-				c.broadcast <- fmt.Sprintf("%s started to smoke a pipe\n", c.Character.name)
-			}
+			fmt.Printf("%s started smoeking\n", ch.name)
+
+			world.BroadcastToOtherCharactersInRoom(
+				ch,
+				fmt.Sprintf("%s started to smoke a pipe\n", ch.name),
+			)
 		case "stop":
 			ch.SetState("idle")
 			ch.Reply("You stopped smoking your pipe\n")
 
-			others := s.world.OtherCharactersInRoom(ch)
-			for _, ch := range others {
-				c := s.clients[ch.id]
-				c.broadcast <- fmt.Sprintf("%s stopped smoking a pipe\n", c.Character.name)
-			}
+			world.BroadcastToOtherCharactersInRoom(
+				ch,
+				fmt.Sprintf("%s stopped smoking a pipe\n", ch.name),
+			)
 		default:
 			ch.Reply(fmt.Sprintln("You either start or stop"))
 		}

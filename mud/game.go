@@ -54,6 +54,10 @@ func (c *Character) SetState(state CharacterState) {
 	}
 }
 
+func (c Character) String() string {
+	return fmt.Sprintf("%s - %s\n", c.id, c.name)
+}
+
 type CharacterState string
 
 const (
@@ -75,11 +79,9 @@ func (state *State) Tick(ch *Character, world World, timeStep time.Duration) {
 func CreateIdleState() State {
 	return State{
 		state:       idle,
-		timeLeft:    time.Second, // is not needed
+		timeLeft:    time.Second,
 		description: "X is standing idle",
 		function: func(ch *Character, world World, timeStep time.Duration) {
-			// This is basically a no-op
-			// fmt.Printf("%s is standing idle\n", ch.name)
 		},
 	}
 }
@@ -92,20 +94,20 @@ func CreateSmokingPipeState() State {
 		function: func(ch *Character, world World, timeStep time.Duration) {
 			ch.state.timeLeft -= timeStep
 			if ch.state.timeLeft > 0 {
-				fmt.Println("time left: ", ch.state.timeLeft)
-
 				ch.Broadcast("The pipe puffs\n")
 
-				for _, ch := range world.OtherCharactersInRoom(ch) {
-					ch.Broadcast(fmt.Sprintf("%s puffs the pipe\n", ch.name))
-				}
+				world.BroadcastToOtherCharactersInRoom(
+					ch,
+					fmt.Sprintf("%s puffs the pipe\n", ch.name),
+				)
 			} else {
 				ch.Broadcast("You run out of tobacco and stopped smoking the pipe\n")
 				ch.SetState("idle")
 
-				for _, ch := range world.OtherCharactersInRoom(ch) {
-					ch.Broadcast(fmt.Sprintf("%s stopped smoking the pipe\n", ch.name))
-				}
+				world.BroadcastToOtherCharactersInRoom(
+					ch,
+					fmt.Sprintf("%s stopped smoking the pipe\n", ch.name),
+				)
 			}
 		},
 	}
@@ -149,6 +151,27 @@ func (w World) OtherCharactersInRoom(currentCharacter *Character) []*Character {
 		}
 	}
 	return others
+}
+
+func (w World) BroadcastToOtherCharactersInRoom(currentCh *Character, message string) {
+	inRoom := w.characters[currentCh.Location]
+
+	for _, ch := range inRoom {
+		if ch.id != currentCh.id {
+			ch.Broadcast(message)
+		}
+	}
+}
+
+func (w World) getCharacter(id uuid.UUID) *Character {
+	for _, chs := range w.characters {
+		for _, ch := range chs {
+			if ch.id == id {
+				return ch
+			}
+		}
+	}
+	return nil
 }
 
 func (w World) RemoveCharacterOnDisconnect(ch Character) {
