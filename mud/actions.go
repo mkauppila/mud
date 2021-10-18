@@ -97,14 +97,11 @@ func StartSmokingCommandAction(command Command, clientId uuid.UUID) ServerAction
 		if ch == nil {
 			return fmt.Errorf("no character for id %s", clientId)
 		}
-		fmt.Print(ch)
 
 		switch command.contents {
 		case "start":
 			ch.SetState("smoking")
 			ch.Reply("You started to smoke your pipe\n")
-
-			fmt.Printf("%s started smoeking\n", ch.name)
 
 			world.BroadcastToOtherCharactersInRoom(
 				ch,
