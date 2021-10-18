@@ -39,8 +39,8 @@ func NewCharacter(id uuid.UUID /*, reply func(string), broadcast func(string)*/)
 	return ch
 }
 
-func (c *Character) Tick(timeStep time.Duration) {
-	c.state.Tick(c, timeStep)
+func (c *Character) Tick(timeStep time.Duration, world World) {
+	c.state.Tick(c, world, timeStep)
 }
 
 func (c *Character) SetState(state CharacterState) {
@@ -65,11 +65,11 @@ type State struct {
 	state       CharacterState
 	timeLeft    time.Duration
 	description string
-	function    func(*Character, time.Duration)
+	function    func(*Character, World, time.Duration)
 }
 
-func (state *State) Tick(ch *Character, timeStep time.Duration) {
-	state.function(ch, timeStep)
+func (state *State) Tick(ch *Character, world World, timeStep time.Duration) {
+	state.function(ch, world, timeStep)
 }
 
 func CreateIdleState() State {
@@ -77,7 +77,7 @@ func CreateIdleState() State {
 		state:       idle,
 		timeLeft:    time.Second, // is not needed
 		description: "X is standing idle",
-		function: func(ch *Character, timeStep time.Duration) {
+		function: func(ch *Character, world World, timeStep time.Duration) {
 			// This is basically a no-op
 			// fmt.Printf("%s is standing idle\n", ch.name)
 		},
@@ -89,19 +89,23 @@ func CreateSmokingPipeState() State {
 		state:       smoking,
 		timeLeft:    time.Second * 5,
 		description: "X is smoking a pipe",
-		function: func(ch *Character, timeStep time.Duration) {
-			fmt.Printf("%s is smoking a pipe\n", ch.name)
-
-			// TODO: needs the world for communciating to other players
-
+		function: func(ch *Character, world World, timeStep time.Duration) {
 			ch.state.timeLeft -= timeStep
 			if ch.state.timeLeft > 0 {
 				fmt.Println("time left: ", ch.state.timeLeft)
 
 				ch.Broadcast("The pipe puffs\n")
+
+				for _, ch := range world.OtherCharactersInRoom(ch) {
+					ch.Broadcast(fmt.Sprintf("%s puffs the pipe\n", ch.name))
+				}
 			} else {
 				ch.Broadcast("You run out of tobacco and stopped smoking the pipe\n")
 				ch.SetState("idle")
+
+				for _, ch := range world.OtherCharactersInRoom(ch) {
+					ch.Broadcast(fmt.Sprintf("%s stopped smoking the pipe\n", ch.name))
+				}
 			}
 		},
 	}
@@ -216,6 +220,6 @@ func (w World) UpdateCharacterStates(timeStep time.Duration) {
 	}
 
 	for _, ch := range allChs {
-		ch.Tick(timeStep)
+		ch.Tick(timeStep, w)
 	}
 }
