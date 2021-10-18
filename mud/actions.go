@@ -6,9 +6,20 @@ import (
 	"github.com/google/uuid"
 )
 
+type UnknownClientIdError struct {
+	id uuid.UUID
+}
+
+func (e UnknownClientIdError) Error() string {
+	return fmt.Sprintf("unknown client id for %s", e.id)
+}
+
 func ConnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
-		client := s.clients[clientId]
+		client, ok := s.clients[clientId]
+		if !ok {
+			return UnknownClientIdError{id: clientId}
+		}
 		ch := client.Character
 
 		s.world.InsertCharacterOnConnect(ch)
@@ -27,7 +38,11 @@ func ConnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 
 func DisconnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
-		client := s.clients[clientId]
+		client, ok := s.clients[clientId]
+		if !ok {
+			return UnknownClientIdError{id: clientId}
+		}
+
 		client.reply <- "You are disconnecting"
 		s.world.RemoveCharacterOnDisconnect(*client.Character)
 
@@ -46,6 +61,10 @@ func DisconnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 func UnknownCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
 		ch := s.world.getCharacter(clientId)
+		if ch == nil {
+			return UnknownClientIdError{id: clientId}
+		}
+
 		ch.Reply(fmt.Sprintf("What is %s?\n", command.contents))
 
 		return nil
@@ -55,6 +74,9 @@ func UnknownCommandAction(command Command, clientId uuid.UUID) ServerAction {
 func SayCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
 		ch := s.world.getCharacter(clientId)
+		if ch == nil {
+			return UnknownClientIdError{id: clientId}
+		}
 		ch.Reply(fmt.Sprintf("You said %s\n", command.contents))
 
 		s.world.BroadcastToOtherCharactersInRoom(
@@ -69,6 +91,9 @@ func SayCommandAction(command Command, clientId uuid.UUID) ServerAction {
 func GoCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
 		ch := s.world.getCharacter(clientId)
+		if ch == nil {
+			return UnknownClientIdError{id: clientId}
+		}
 
 		if s.world.CanCharactorMoveInDirection(ch, command.contents) {
 			s.world.BroadcastToOtherCharactersInRoom(
@@ -95,7 +120,7 @@ func StartSmokingCommandAction(command Command, clientId uuid.UUID) ServerAction
 
 		ch := world.getCharacter(clientId)
 		if ch == nil {
-			return fmt.Errorf("no character for id %s", clientId)
+			return UnknownClientIdError{id: clientId}
 		}
 
 		switch command.contents {
