@@ -14,6 +14,7 @@ type Server struct {
 	clients      map[uuid.UUID]Client
 	commander    *CommandHandler
 	world        *World
+	timeStep     time.Duration
 }
 
 func NewServer() Server {
@@ -23,6 +24,7 @@ func NewServer() Server {
 		clients:      make(map[uuid.UUID]Client),
 		commander:    NewCommandHandler(),
 		world:        NewWorld(),
+		timeStep:     time.Second,
 	}
 }
 
@@ -50,7 +52,7 @@ func (s *Server) removeClientAtIndex(clientId uuid.UUID) {
 }
 
 func (s *Server) Run() {
-	ticker := time.NewTicker(time.Duration(time.Millisecond * 1000))
+	ticker := time.NewTicker(s.timeStep)
 	defer ticker.Stop()
 
 	var actions []ServerAction
@@ -80,7 +82,7 @@ func (s *Server) processServerActions(actions []ServerAction) {
 		}
 	}
 
-	s.world.UpdateCharacterStates(time.Second)
+	s.world.UpdateCharacterStates(s.timeStep)
 
 	// fmt.Println("All actions processed for this tick")
 }
