@@ -5,12 +5,12 @@ import "github.com/google/uuid"
 type ServerAction func(server *Server) error
 type CommandAction func(command Command, clientId uuid.UUID) ServerAction
 
-type CommandHandler struct {
+type CommandRegistry struct {
 	commandActions map[string]CommandAction
 }
 
-func NewCommandHandler() *CommandHandler {
-	commander := &CommandHandler{
+func NewCommandRegistry() *CommandRegistry {
+	commander := &CommandRegistry{
 		commandActions: map[string]CommandAction{
 			"say":   SayCommandAction,
 			"go":    GoCommandAction,
@@ -21,15 +21,15 @@ func NewCommandHandler() *CommandHandler {
 	return commander
 }
 
-func (c *CommandHandler) ConnectAction(clientId uuid.UUID) ServerAction {
+func (c *CommandRegistry) ConnectAction(clientId uuid.UUID) ServerAction {
 	return ConnectCommandAction(Command{command: "connect", contents: ""}, clientId)
 }
 
-func (c *CommandHandler) DisconnectAction(clientId uuid.UUID) ServerAction {
+func (c *CommandRegistry) DisconnectAction(clientId uuid.UUID) ServerAction {
 	return DisconnectCommandAction(Command{command: "disconnect", contents: ""}, clientId)
 }
 
-func (c *CommandHandler) InputToAction(line string, clientId uuid.UUID) ServerAction {
+func (c *CommandRegistry) InputToAction(line string, clientId uuid.UUID) ServerAction {
 	command := ParseCommand(line)
 
 	commandAction, ok := c.commandActions[command.command]

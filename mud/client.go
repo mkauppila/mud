@@ -13,18 +13,18 @@ type Client struct {
 	conn      net.Conn
 	broadcast chan string
 	reply     chan string
-	commander *CommandHandler
+	registry  *CommandRegistry
 
 	Character *Character
 }
 
-func NewClient(conn net.Conn, id uuid.UUID, commander *CommandHandler, character *Character) Client {
+func NewClient(conn net.Conn, id uuid.UUID, registry *CommandRegistry, character *Character) Client {
 	client := Client{
 		id:        id,
 		conn:      conn,
 		broadcast: make(chan string),
 		reply:     make(chan string),
-		commander: commander,
+		registry:  registry,
 		Character: character,
 	}
 
@@ -41,7 +41,7 @@ func NewClient(conn net.Conn, id uuid.UUID, commander *CommandHandler, character
 func (c *Client) Listen(actions chan<- ServerAction) {
 	reader := bufio.NewReader(c.conn)
 
-	actions <- c.commander.ConnectAction(c.id)
+	actions <- c.registry.ConnectAction(c.id)
 	connectReply := <-c.reply
 	c.directReply(connectReply)
 
@@ -50,12 +50,12 @@ func (c *Client) Listen(actions chan<- ServerAction) {
 		if err != nil {
 			// disconnect command tells the server to clean up this client
 			// the break here breaks the Listen loop
-			actions <- c.commander.DisconnectAction(c.id)
+			actions <- c.registry.DisconnectAction(c.id)
 			<-c.reply
 			break
 		}
 
-		actions <- c.commander.InputToAction(line, c.id)
+		actions <- c.registry.InputToAction(line, c.id)
 
 		// Wait for player's reply
 		commandReply, ok := <-c.reply

@@ -12,7 +12,7 @@ type Server struct {
 	actions      chan ServerAction
 	clientsMutex sync.Mutex
 	clients      map[uuid.UUID]Client
-	commander    *CommandHandler
+	registry     *CommandRegistry
 	world        *World
 	timeStep     time.Duration
 }
@@ -22,7 +22,7 @@ func NewServer() Server {
 		actions:      make(chan ServerAction),
 		clientsMutex: sync.Mutex{},
 		clients:      make(map[uuid.UUID]Client),
-		commander:    NewCommandHandler(),
+		registry:     NewCommandRegistry(),
 		world:        NewWorld(),
 		timeStep:     time.Second,
 	}
@@ -37,7 +37,7 @@ func (s *Server) AddNewClient(conn net.Conn) {
 		panic(err)
 	}
 
-	client := NewClient(conn, clientId, s.commander, NewCharacter(clientId))
+	client := NewClient(conn, clientId, s.registry, NewCharacter(clientId))
 	s.clients[clientId] = client
 
 	go client.Listen(s.actions)
