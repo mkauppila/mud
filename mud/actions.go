@@ -6,11 +6,11 @@ import (
 	"github.com/google/uuid"
 )
 
-type UnknownClientIdError struct {
+type ErrUnknownClientId struct {
 	id uuid.UUID
 }
 
-func (e UnknownClientIdError) Error() string {
+func (e ErrUnknownClientId) Error() string {
 	return fmt.Sprintf("unknown client id for %s", e.id)
 }
 
@@ -18,7 +18,7 @@ func ConnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
 		client, ok := s.clients[clientId]
 		if !ok {
-			return UnknownClientIdError{id: clientId}
+			return ErrUnknownClientId{id: clientId}
 		}
 		ch := client.Character
 
@@ -40,7 +40,7 @@ func DisconnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
 		client, ok := s.clients[clientId]
 		if !ok {
-			return UnknownClientIdError{id: clientId}
+			return ErrUnknownClientId{id: clientId}
 		}
 
 		client.reply <- "You are disconnecting"
@@ -62,7 +62,7 @@ func UnknownCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
 		ch := s.world.getCharacter(clientId)
 		if ch == nil {
-			return UnknownClientIdError{id: clientId}
+			return ErrUnknownClientId{id: clientId}
 		}
 
 		ch.Reply(fmt.Sprintf("What is %s?\n", command.contents))
@@ -75,7 +75,7 @@ func SayCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
 		ch := s.world.getCharacter(clientId)
 		if ch == nil {
-			return UnknownClientIdError{id: clientId}
+			return ErrUnknownClientId{id: clientId}
 		}
 		ch.Reply(fmt.Sprintf("You said %s\n", command.contents))
 
@@ -92,7 +92,7 @@ func GoCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
 		ch := s.world.getCharacter(clientId)
 		if ch == nil {
-			return UnknownClientIdError{id: clientId}
+			return ErrUnknownClientId{id: clientId}
 		}
 
 		if s.world.CanCharactorMoveInDirection(ch, command.contents) {
@@ -120,7 +120,7 @@ func StartSmokingCommandAction(command Command, clientId uuid.UUID) ServerAction
 
 		ch := world.getCharacter(clientId)
 		if ch == nil {
-			return UnknownClientIdError{id: clientId}
+			return ErrUnknownClientId{id: clientId}
 		}
 
 		switch command.contents {
