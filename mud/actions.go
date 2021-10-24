@@ -16,8 +16,8 @@ func (e ErrUnknownClientId) Error() string {
 
 func ConnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
-		client, ok := s.clients[clientId]
-		if !ok {
+		client := s.getClient(clientId)
+		if client == nil {
 			return ErrUnknownClientId{id: clientId}
 		}
 		client.reply <- "Welcome! What is your name?\n"
@@ -28,8 +28,8 @@ func ConnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 
 func DisconnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
-		client, ok := s.clients[clientId]
-		if !ok {
+		client := s.getClient(clientId)
+		if client == nil {
 			return ErrUnknownClientId{id: clientId}
 		}
 
@@ -50,7 +50,10 @@ func DisconnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 
 func NameCharacterCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
-		client := s.clients[clientId]
+		client := s.getClient(clientId)
+		if client == nil {
+			return ErrUnknownClientId{id: clientId}
+		}
 		client.Character = NewCharacter(clientId, command.contents)
 
 		ch := client.Character

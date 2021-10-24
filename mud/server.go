@@ -10,7 +10,7 @@ import (
 
 type Server struct {
 	actions      chan ServerAction
-	clientsMutex sync.Mutex
+	clientsMutex sync.RWMutex
 	clients      map[uuid.UUID]*Client
 	registry     *CommandRegistry
 	world        *World
@@ -20,7 +20,7 @@ type Server struct {
 func NewServer() Server {
 	return Server{
 		actions:      make(chan ServerAction),
-		clientsMutex: sync.Mutex{},
+		clientsMutex: sync.RWMutex{},
 		clients:      make(map[uuid.UUID]*Client),
 		registry:     NewLoginCommandRegistry(LoginParseCommand),
 		world:        NewWorld(),
@@ -29,16 +29,16 @@ func NewServer() Server {
 }
 
 func (s *Server) AddNewClient(conn net.Conn) {
-	s.clientsMutex.Lock()
-	defer s.clientsMutex.Unlock()
 
 	clientId, err := uuid.NewRandom()
 	if err != nil {
 		panic(err)
 	}
 
+	s.clientsMutex.Lock()
 	client := NewClient(conn, clientId, s.registry)
 	s.clients[clientId] = client
+	s.clientsMutex.Unlock()
 
 	go client.Listen(s.actions)
 	go client.Broadcast()
@@ -46,9 +46,19 @@ func (s *Server) AddNewClient(conn net.Conn) {
 
 func (s *Server) removeClientAtIndex(clientId uuid.UUID) {
 	s.clientsMutex.Lock()
-	defer s.clientsMutex.Unlock()
-
 	delete(s.clients, clientId)
+	s.clientsMutex.Unlock()
+}
+
+func (s *Server) getClient(id uuid.UUID) *Client {
+	s.clientsMutex.RLock()
+	defer s.clientsMutex.RUnlock()
+	client, ok := s.clients[id]
+	if ok {
+		return client
+	} else {
+		return nil
+	}
 }
 
 func (s *Server) Run() {
