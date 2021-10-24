@@ -13,26 +13,19 @@ type Client struct {
 	conn      net.Conn
 	broadcast chan string
 	reply     chan string
-	registry  *CommandRegistry
 
+	registry  *CommandRegistry
 	Character *Character
 }
 
-func NewClient(conn net.Conn, id uuid.UUID, registry *CommandRegistry, character *Character) Client {
-	client := Client{
+func NewClient(conn net.Conn, id uuid.UUID, registry *CommandRegistry) *Client {
+	client := &Client{
 		id:        id,
 		conn:      conn,
 		broadcast: make(chan string),
 		reply:     make(chan string),
 		registry:  registry,
-		Character: character,
-	}
-
-	client.Character.Reply = func(message string) {
-		client.reply <- message
-	}
-	client.Character.Broadcast = func(message string) {
-		client.broadcast <- message
+		Character: nil,
 	}
 
 	return client
@@ -54,6 +47,7 @@ func (c *Client) Listen(actions chan<- ServerAction) {
 			<-c.reply
 			break
 		}
+		fmt.Println("registry: ", c.registry)
 
 		actions <- c.registry.InputToAction(line, c.id)
 
@@ -114,4 +108,14 @@ func (c *Client) Disconnect() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (c *Client) SetCommandRegistry(registry *CommandRegistry) {
+	fmt.Println("set up new resgistry")
+	fmt.Println("old: ", c.registry)
+
+	// registry should probably be safed guarded agasint multi goroutine access
+	c.registry = registry
+
+	fmt.Println("new: ", c.registry)
 }

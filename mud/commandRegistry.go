@@ -7,18 +7,32 @@ type CommandAction func(command Command, clientId uuid.UUID) ServerAction
 
 type CommandRegistry struct {
 	commandActions map[string]CommandAction
+	parser         CommandParser
 }
 
-func NewCommandRegistry() *CommandRegistry {
-	commander := &CommandRegistry{
+func NewLoginCommandRegistry(parser CommandParser) *CommandRegistry {
+	registry := &CommandRegistry{
+		commandActions: map[string]CommandAction{
+			"choose": ChooseCharacterCommandAction,
+		},
+		parser: parser,
+	}
+
+	return registry
+}
+
+// Rename: New in-game registry
+func NewCommandRegistry(parser CommandParser) *CommandRegistry {
+	registry := &CommandRegistry{
 		commandActions: map[string]CommandAction{
 			"say":   SayCommandAction,
 			"go":    GoCommandAction,
 			"smoke": StartSmokingCommandAction,
 		},
+		parser: parser,
 	}
 
-	return commander
+	return registry
 }
 
 func (c *CommandRegistry) ConnectAction(clientId uuid.UUID) ServerAction {
@@ -30,7 +44,7 @@ func (c *CommandRegistry) DisconnectAction(clientId uuid.UUID) ServerAction {
 }
 
 func (c *CommandRegistry) InputToAction(line string, clientId uuid.UUID) ServerAction {
-	command := ParseCommand(line)
+	command := c.parser.ParseCommand(line)
 
 	commandAction, ok := c.commandActions[command.command]
 	if ok {

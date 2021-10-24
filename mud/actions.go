@@ -20,17 +20,7 @@ func ConnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 		if !ok {
 			return ErrUnknownClientId{id: clientId}
 		}
-		ch := client.Character
-
-		s.world.InsertCharacterOnConnect(ch)
-
-		ch.Reply(fmt.Sprintf("hello %s\n", ch.name))
-		ch.SetState("idle")
-
-		s.world.BroadcastToOtherCharactersInRoom(
-			ch,
-			fmt.Sprintf("%v joined!\n", ch.name),
-		)
+		client.reply <- "Welcome! What is your name?\n"
 
 		return nil
 	}
@@ -52,6 +42,37 @@ func DisconnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 		s.world.BroadcastToOtherCharactersInRoom(
 			client.Character,
 			fmt.Sprintf("%v disconnecting...\n", client.Character.name),
+		)
+
+		return nil
+	}
+}
+
+func ChooseCharacterCommandAction(command Command, clientId uuid.UUID) ServerAction {
+	return func(s *Server) error {
+		fmt.Println(command)
+
+		client := s.clients[clientId]
+		client.Character = NewCharacter(clientId, command.contents)
+
+		ch := client.Character
+		// connect character with clients comms
+		client.Character.Reply = func(message string) {
+			client.reply <- message
+		}
+		client.Character.Broadcast = func(message string) {
+			client.broadcast <- message
+		}
+		client.SetCommandRegistry(NewCommandRegistry(InGameParser{}))
+
+		s.world.InsertCharacterOnConnect(ch)
+
+		ch.Reply(fmt.Sprintf("%s woke up the world\n", ch.name))
+		ch.SetState("idle")
+
+		s.world.BroadcastToOtherCharactersInRoom(
+			ch,
+			fmt.Sprintf("%v joined!\n", ch.name),
 		)
 
 		return nil

@@ -9,7 +9,14 @@ type Command struct {
 	contents string
 }
 
-func ParseCommand(message string) Command {
+type CommandParser interface {
+	ParseCommand(string) Command
+}
+
+type InGameParser struct {
+}
+
+func (p InGameParser) ParseCommand(message string) Command {
 	message = strings.TrimSpace(message)
 
 	index := strings.IndexAny(message, " ")
@@ -42,4 +49,13 @@ func ParseCommand(message string) Command {
 	}
 
 	return Command{"unknown", message}
+}
+
+type LoginParser struct {
+}
+
+func (p LoginParser) ParseCommand(message string) Command {
+	message = strings.TrimSpace(message)
+
+	return Command{"choose", message}
 }

@@ -2,7 +2,6 @@ package mud
 
 import (
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,13 +23,12 @@ type Character struct {
 	state State
 }
 
-func NewCharacter(id uuid.UUID /*, reply func(string), broadcast func(string)*/) *Character {
-	names := []string{"Matt", "John", "Ugruk", "Sonya", "Miraboile"}
+func NewCharacter(id uuid.UUID, name string /*, reply func(string), broadcast func(string)*/) *Character {
 	ch := &Character{
 		id:       id,
 		health:   30,
 		attack:   1,
-		name:     names[rand.Intn(len(names))],
+		name:     name,
 		Location: Location{X: 0, Y: 0},
 	}
 
