@@ -9,14 +9,9 @@ type Command struct {
 	contents string
 }
 
-type CommandParser interface {
-	ParseCommand(string) Command
-}
+type CommandParser func(message string) Command
 
-type InGameParser struct {
-}
-
-func (p InGameParser) ParseCommand(message string) Command {
+func ParseInGameCommand(message string) Command {
 	message = strings.TrimSpace(message)
 
 	index := strings.IndexAny(message, " ")
@@ -51,10 +46,7 @@ func (p InGameParser) ParseCommand(message string) Command {
 	return Command{"unknown", message}
 }
 
-type LoginParser struct {
-}
-
-func (p LoginParser) ParseCommand(message string) Command {
+func LoginParseCommand(message string) Command {
 	message = strings.TrimSpace(message)
 
 	return Command{"choose", message}

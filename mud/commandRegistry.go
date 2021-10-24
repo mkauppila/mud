@@ -13,7 +13,7 @@ type CommandRegistry struct {
 func NewLoginCommandRegistry(parser CommandParser) *CommandRegistry {
 	registry := &CommandRegistry{
 		commandActions: map[string]CommandAction{
-			"choose": ChooseCharacterCommandAction,
+			"choose": NameCharacterCommandAction,
 		},
 		parser: parser,
 	}
@@ -21,8 +21,7 @@ func NewLoginCommandRegistry(parser CommandParser) *CommandRegistry {
 	return registry
 }
 
-// Rename: New in-game registry
-func NewCommandRegistry(parser CommandParser) *CommandRegistry {
+func NewInGameCommandRegistry(parser CommandParser) *CommandRegistry {
 	registry := &CommandRegistry{
 		commandActions: map[string]CommandAction{
 			"say":   SayCommandAction,
@@ -44,7 +43,7 @@ func (c *CommandRegistry) DisconnectAction(clientId uuid.UUID) ServerAction {
 }
 
 func (c *CommandRegistry) InputToAction(line string, clientId uuid.UUID) ServerAction {
-	command := c.parser.ParseCommand(line)
+	command := c.parser(line)
 
 	commandAction, ok := c.commandActions[command.command]
 	if ok {

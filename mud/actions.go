@@ -48,10 +48,8 @@ func DisconnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	}
 }
 
-func ChooseCharacterCommandAction(command Command, clientId uuid.UUID) ServerAction {
+func NameCharacterCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	return func(s *Server) error {
-		fmt.Println(command)
-
 		client := s.clients[clientId]
 		client.Character = NewCharacter(clientId, command.contents)
 
@@ -63,7 +61,7 @@ func ChooseCharacterCommandAction(command Command, clientId uuid.UUID) ServerAct
 		client.Character.Broadcast = func(message string) {
 			client.broadcast <- message
 		}
-		client.SetCommandRegistry(NewCommandRegistry(InGameParser{}))
+		client.SetCommandRegistry(NewInGameCommandRegistry(ParseInGameCommand))
 
 		s.world.InsertCharacterOnConnect(ch)
 

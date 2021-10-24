@@ -13,7 +13,7 @@ func TestCommandParsing(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		command := ParseCommand(tc.msg)
+		command := ParseInGameCommand(tc.msg)
 		if command.command != tc.want.command {
 			t.Fatalf("Testcase %d: Got %s, expected %s", i, command.command, tc.want.command)
 		}

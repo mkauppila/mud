@@ -47,7 +47,6 @@ func (c *Client) Listen(actions chan<- ServerAction) {
 			<-c.reply
 			break
 		}
-		fmt.Println("registry: ", c.registry)
 
 		actions <- c.registry.InputToAction(line, c.id)
 
@@ -111,11 +110,6 @@ func (c *Client) Disconnect() {
 }
 
 func (c *Client) SetCommandRegistry(registry *CommandRegistry) {
-	fmt.Println("set up new resgistry")
-	fmt.Println("old: ", c.registry)
-
-	// registry should probably be safed guarded agasint multi goroutine access
+	// TODO: registry should probably be safed guarded agasint multi goroutine access
 	c.registry = registry
-
-	fmt.Println("new: ", c.registry)
 }

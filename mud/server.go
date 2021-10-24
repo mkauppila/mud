@@ -22,7 +22,7 @@ func NewServer() Server {
 		actions:      make(chan ServerAction),
 		clientsMutex: sync.Mutex{},
 		clients:      make(map[uuid.UUID]*Client),
-		registry:     NewLoginCommandRegistry(LoginParser{}),
+		registry:     NewLoginCommandRegistry(LoginParseCommand),
 		world:        NewWorld(),
 		timeStep:     time.Second,
 	}
