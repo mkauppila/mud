@@ -17,7 +17,7 @@ func main() {
 	}
 	defer ln.Close()
 
-	server := mud.NewServer()
+	server := mud.NewServer(mud.UuidGenerator)
 	go server.Run()
 
 	for {
@@ -26,7 +26,12 @@ func main() {
 			panic(err)
 		}
 
-		go server.AddNewClient(conn)
+		go func() {
+			err := server.AddNewClient(conn)
+			if err != nil {
+				panic(err)
+			}
+		}()
 	}
 
 	// server.Disconnect()

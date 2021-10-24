@@ -2,19 +2,17 @@ package mud
 
 import (
 	"fmt"
-
-	"github.com/google/uuid"
 )
 
 type ErrUnknownClientId struct {
-	id uuid.UUID
+	id ClientId
 }
 
 func (e ErrUnknownClientId) Error() string {
 	return fmt.Sprintf("unknown client id for %s", e.id)
 }
 
-func ConnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
+func ConnectCommandAction(command Command, clientId ClientId) ServerAction {
 	return func(s *Server) error {
 		client := s.getClient(clientId)
 		if client == nil {
@@ -26,7 +24,7 @@ func ConnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	}
 }
 
-func DisconnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
+func DisconnectCommandAction(command Command, clientId ClientId) ServerAction {
 	return func(s *Server) error {
 		client := s.getClient(clientId)
 		if client == nil {
@@ -48,7 +46,7 @@ func DisconnectCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	}
 }
 
-func NameCharacterCommandAction(command Command, clientId uuid.UUID) ServerAction {
+func NameCharacterCommandAction(command Command, clientId ClientId) ServerAction {
 	return func(s *Server) error {
 		client := s.getClient(clientId)
 		if client == nil {
@@ -80,7 +78,7 @@ func NameCharacterCommandAction(command Command, clientId uuid.UUID) ServerActio
 	}
 }
 
-func UnknownCommandAction(command Command, clientId uuid.UUID) ServerAction {
+func UnknownCommandAction(command Command, clientId ClientId) ServerAction {
 	return func(s *Server) error {
 		ch := s.world.getCharacter(clientId)
 		if ch == nil {
@@ -93,7 +91,7 @@ func UnknownCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	}
 }
 
-func SayCommandAction(command Command, clientId uuid.UUID) ServerAction {
+func SayCommandAction(command Command, clientId ClientId) ServerAction {
 	return func(s *Server) error {
 		ch := s.world.getCharacter(clientId)
 		if ch == nil {
@@ -110,7 +108,7 @@ func SayCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	}
 }
 
-func GoCommandAction(command Command, clientId uuid.UUID) ServerAction {
+func GoCommandAction(command Command, clientId ClientId) ServerAction {
 	return func(s *Server) error {
 		ch := s.world.getCharacter(clientId)
 		if ch == nil {
@@ -136,7 +134,7 @@ func GoCommandAction(command Command, clientId uuid.UUID) ServerAction {
 	}
 }
 
-func StartSmokingCommandAction(command Command, clientId uuid.UUID) ServerAction {
+func StartSmokingCommandAction(command Command, clientId ClientId) ServerAction {
 	return func(s *Server) error {
 		world := s.world
 

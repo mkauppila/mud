@@ -8,8 +8,19 @@ import (
 	"github.com/google/uuid"
 )
 
+type ClientId string
+type IdGenerator func() (ClientId, error)
+
+func UuidGenerator() (ClientId, error) {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return ClientId(uuid.Nil.String()), err
+	}
+	return ClientId(id.String()), nil
+}
+
 type Client struct {
-	id        uuid.UUID
+	id        ClientId
 	conn      net.Conn
 	broadcast chan string
 	reply     chan string
@@ -18,7 +29,7 @@ type Client struct {
 	Character *Character
 }
 
-func NewClient(conn net.Conn, id uuid.UUID, registry *CommandRegistry) *Client {
+func NewClient(conn net.Conn, id ClientId, registry *CommandRegistry) *Client {
 	client := &Client{
 		id:        id,
 		conn:      conn,
@@ -58,7 +69,7 @@ func (c *Client) Listen(actions chan<- ServerAction) {
 		c.directReply(commandReply)
 	}
 
-	fmt.Printf("Client %d disconnected (listen)\n", c.id)
+	fmt.Printf("Client %s disconnected (listen)\n", c.id)
 }
 
 func (c *Client) directReply(message string) {
@@ -94,11 +105,11 @@ func (c *Client) Broadcast() {
 		}
 	}
 
-	fmt.Printf("Client %d disconnected (server)\n", c.id)
+	fmt.Printf("Client %s disconnected (server)\n", c.id)
 }
 
 func (c *Client) Disconnect() {
-	fmt.Printf("Disconnecting %d\n", c.id)
+	fmt.Printf("Disconnecting %s\n", c.id)
 
 	close(c.broadcast)
 	close(c.reply)

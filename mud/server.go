@@ -1,56 +1,59 @@
 package mud
 
 import (
+	"fmt"
 	"net"
 	"sync"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Server struct {
 	actions      chan ServerAction
 	clientsMutex sync.RWMutex
-	clients      map[uuid.UUID]*Client
+	clients      map[ClientId]*Client
 	registry     *CommandRegistry
 	world        *World
 	timeStep     time.Duration
+	idGenerator  IdGenerator
 }
 
-func NewServer() Server {
+func NewServer(idGenerator IdGenerator) Server {
 	return Server{
 		actions:      make(chan ServerAction),
 		clientsMutex: sync.RWMutex{},
-		clients:      make(map[uuid.UUID]*Client),
+		clients:      make(map[ClientId]*Client),
 		registry:     NewLoginCommandRegistry(LoginParseCommand),
 		world:        NewWorld(),
 		timeStep:     time.Second,
+		idGenerator:  idGenerator,
 	}
 }
 
-func (s *Server) AddNewClient(conn net.Conn) {
-
-	clientId, err := uuid.NewRandom()
+func (s *Server) AddNewClient(conn net.Conn) error {
+	clientId, err := s.idGenerator()
+	fmt.Println("client id ", clientId)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	s.clientsMutex.Lock()
 	client := NewClient(conn, clientId, s.registry)
+	s.clientsMutex.Lock()
 	s.clients[clientId] = client
 	s.clientsMutex.Unlock()
 
 	go client.Listen(s.actions)
 	go client.Broadcast()
+
+	return nil
 }
 
-func (s *Server) removeClientAtIndex(clientId uuid.UUID) {
+func (s *Server) removeClientAtIndex(clientId ClientId) {
 	s.clientsMutex.Lock()
 	delete(s.clients, clientId)
 	s.clientsMutex.Unlock()
 }
 
-func (s *Server) getClient(id uuid.UUID) *Client {
+func (s *Server) getClient(id ClientId) *Client {
 	s.clientsMutex.RLock()
 	defer s.clientsMutex.RUnlock()
 	client, ok := s.clients[id]

@@ -3,8 +3,6 @@ package mud
 import (
 	"fmt"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Location struct {
@@ -12,7 +10,7 @@ type Location struct {
 }
 
 type Character struct {
-	id             uuid.UUID // same as client uuid
+	id             ClientId
 	health, attack int
 	name           string
 	Location
@@ -23,7 +21,7 @@ type Character struct {
 	state State
 }
 
-func NewCharacter(id uuid.UUID, name string /*, reply func(string), broadcast func(string)*/) *Character {
+func NewCharacter(id ClientId, name string /*, reply func(string), broadcast func(string)*/) *Character {
 	ch := &Character{
 		id:       id,
 		health:   30,
@@ -161,7 +159,7 @@ func (w World) BroadcastToOtherCharactersInRoom(currentCh *Character, message st
 	}
 }
 
-func (w World) getCharacter(id uuid.UUID) *Character {
+func (w World) getCharacter(id ClientId) *Character {
 	for _, chs := range w.characters {
 		for _, ch := range chs {
 			if ch.id == id {

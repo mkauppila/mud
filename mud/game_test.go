@@ -9,7 +9,7 @@ import (
 func TestMovingCharacter(t *testing.T) {
 	world := NewWorld()
 	id, _ := uuid.NewRandom()
-	character := NewCharacter(id)
+	character := NewCharacter(ClientId(id.String()), "Foo")
 	world.InsertCharacterOnConnect(character)
 
 	ch := world.characters[Location{X: 0, Y: 0}][0]
