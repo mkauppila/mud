@@ -21,6 +21,43 @@ func (e ErrUnknownCharacter) Error() string {
 	return fmt.Sprintf("unknown character. Client id for %s. Action: %s", e.id, e.action)
 }
 
+type CommandInfo struct {
+	command     string
+	description string
+	action      CommandAction
+}
+
+var loginCommandInfos = []CommandInfo{
+	{
+		command:     "choose",
+		description: "Choose a character name",
+		action:      NameCharacterCommandAction,
+	},
+}
+
+var ingameCommandInfos = []CommandInfo{
+	{
+		command:     "help",
+		description: "List all the commands and stuff",
+		action:      HelpCommandAction,
+	},
+	{
+		command:     "say",
+		description: "Say something",
+		action:      SayCommandAction,
+	},
+	{
+		command:     "go",
+		description: "Move to east, west, north or south",
+		action:      GoCommandAction,
+	},
+	{
+		command:     "smoke",
+		description: "You can _start_ or _stop_ smoking",
+		action:      SmokeCommandAction,
+	},
+}
+
 func ConnectCommandAction(command Command, clientId ClientId) ServerAction {
 	return func(s *Server) error {
 		client := s.getClient(clientId)
@@ -156,7 +193,7 @@ func GoCommandAction(command Command, clientId ClientId) ServerAction {
 	}
 }
 
-func StartSmokingCommandAction(command Command, clientId ClientId) ServerAction {
+func SmokeCommandAction(command Command, clientId ClientId) ServerAction {
 	return func(s *Server) error {
 		world := s.world
 
@@ -185,6 +222,25 @@ func StartSmokingCommandAction(command Command, clientId ClientId) ServerAction 
 		default:
 			ch.Reply(fmt.Sprintln("You either start or stop"))
 		}
+
+		return nil
+	}
+}
+
+func HelpCommandAction(command Command, clientId ClientId) ServerAction {
+	return func(s *Server) error {
+		client, ok := s.clients[clientId]
+		if !ok {
+			return nil
+		}
+		c := client.registry.CommandsWithDescriptions()
+
+		var output = "help:\n"
+		for _, cc := range c {
+			output = fmt.Sprintf("%s\t%s\n", output, cc)
+		}
+
+		client.reply <- output
 
 		return nil
 	}

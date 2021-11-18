@@ -41,6 +41,8 @@ func ParseInGameCommand(message string) Command {
 		return Command{"go", message}
 	case "smoke":
 		return Command{"smoke", message[index+1:]}
+	case "help":
+		return Command{"help", ""}
 	}
 
 	return Command{"unknown", message}
