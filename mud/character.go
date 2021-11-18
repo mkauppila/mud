@@ -108,7 +108,3 @@ func CreateSmokingPipeState() State {
 		},
 	}
 }
-
-type Room struct {
-	description string
-}
