@@ -76,7 +76,11 @@ func NameCharacterCommandAction(command Command, clientId ClientId) ServerAction
 
 		s.world.InsertCharacterOnConnect(ch)
 
-		ch.Reply(fmt.Sprintf("%s woke up the world\n", ch.name))
+		ch.Reply(
+			fmt.Sprintf("%s woke up the world\n%s\n",
+				ch.name,
+				s.world.DescribeRoom(ch.Location)),
+		)
 		ch.SetState("idle")
 
 		s.world.BroadcastToOtherCharactersInRoom(
@@ -126,18 +130,26 @@ func GoCommandAction(command Command, clientId ClientId) ServerAction {
 		}
 
 		if s.world.CanCharactorMoveInDirection(ch, command.contents) {
+			// broadcast to old room
 			s.world.BroadcastToOtherCharactersInRoom(
 				ch,
 				fmt.Sprintf("%s moved to %s\n", ch.name, command.contents),
 			)
 
 			s.world.MoveCharacterInDirection(ch, command.contents)
-			ch.Reply(fmt.Sprintf("You move to %s\n", command.contents))
+			ch.Reply(
+				fmt.Sprintf("You move to %s\n%s\n",
+					command.contents,
+					s.world.DescribeRoom(ch.Location)),
+			)
 
+			// broadcast to new room
 			s.world.BroadcastToOtherCharactersInRoom(
 				ch,
-				fmt.Sprintf("%s moved to %s\n", ch.name, command.contents),
+				fmt.Sprintf("%s entered from %s\n", ch.name, command.contents),
 			)
+		} else {
+			ch.Reply("Ouch, it seems the world has some boundaries\n")
 		}
 
 		return nil

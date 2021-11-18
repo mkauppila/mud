@@ -4,14 +4,20 @@ import "time"
 
 type World struct {
 	characters map[Location][]*Character
-	rooms      map[Location][]Room
+	rooms      map[Location]Room
 }
 
 func NewWorld() *World {
-	return &World{
+	world := &World{
 		characters: make(map[Location][]*Character),
-		rooms:      make(map[Location][]Room),
+		rooms:      make(map[Location]Room),
 	}
+
+	for _, room := range BasicMap() {
+		world.rooms[room.location] = room
+	}
+
+	return world
 }
 
 func (w World) InsertCharacterOnConnect(character *Character) {
@@ -60,7 +66,7 @@ func (w World) getCharacter(id ClientId) *Character {
 }
 
 func (w World) RemoveCharacterOnDisconnect(ch *Character) {
-	// remova the disconnecting ch from the room
+	// remove the disconnecting ch from the room
 	chs := w.characters[ch.Location]
 	for i, c := range chs {
 		if c.id == ch.id {
@@ -73,30 +79,17 @@ func (w World) RemoveCharacterOnDisconnect(ch *Character) {
 }
 
 func (w World) CanCharactorMoveInDirection(character *Character, direction string) bool {
-	// TODO check if movement is allowed
-	// if the rooms map has a room at this coord, then it's okay
-	// otherwise block the movement here and modify the players respond
-	// -> "Ouch, it seems the world has some boundaries"
-
-	// There's no rooms or boundaries yet so it's always allowed
-	return true
+	newLoc := NewLocationInDirection(character.Location, direction)
+	if _, ok := w.rooms[newLoc]; !ok {
+		return false
+	} else {
+		return true
+	}
 }
 
 func (w World) MoveCharacterInDirection(character *Character, direction string) {
-	old := character.Location
-
-	switch direction {
-	case "west":
-		character.X--
-	case "east":
-		character.X++
-	case "north":
-		character.Y--
-	case "south":
-		character.Y++
-	}
-
-	new := character.Location
+	old := NewLocation(character.Location.X, character.Y)
+	new := NewLocationInDirection(old, direction)
 
 	// add to new location
 	list, ok := w.characters[new]
@@ -106,6 +99,7 @@ func (w World) MoveCharacterInDirection(character *Character, direction string) 
 		list = append(list, character)
 		w.characters[new] = list
 	}
+	character.Location = new
 
 	// remove character from old
 	list, ok = w.characters[old]
@@ -139,4 +133,8 @@ func (w World) UpdateCharacterStates(timeStep time.Duration) {
 	for _, ch := range allChs {
 		ch.Tick(timeStep, w)
 	}
+}
+
+func (w World) DescribeRoom(location Location) string {
+	return w.rooms[location].description
 }

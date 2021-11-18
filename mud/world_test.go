@@ -21,7 +21,7 @@ func TestBasicWorldFunctionality(t *testing.T) {
 		t.Fatal("Bella should be in the same room")
 	}
 
-	w.MoveCharacterInDirection(w.getCharacter(clientId2), "west")
+	w.MoveCharacterInDirection(w.getCharacter(clientId2), "east")
 	if o := w.OtherCharactersInRoom(ch); len(o) > 0 {
 		t.Fatal("There should not be other characters in the room")
 	}

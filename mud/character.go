@@ -5,10 +5,6 @@ import (
 	"time"
 )
 
-type Location struct {
-	X, Y int
-}
-
 type Character struct {
 	id             ClientId
 	health, attack int
