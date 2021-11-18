@@ -170,8 +170,16 @@ func (w World) getCharacter(id ClientId) *Character {
 	return nil
 }
 
-func (w World) RemoveCharacterOnDisconnect(ch Character) {
-	delete(w.characters, ch.Location)
+func (w World) RemoveCharacterOnDisconnect(ch *Character) {
+	chs := w.characters[ch.Location]
+	for i, c := range chs {
+		if c.id == ch.id {
+			chs[i] = chs[(len(chs) - 1)]
+			chs = chs[:len(chs)-1]
+			break
+		}
+	}
+	w.characters[ch.Location] = chs
 }
 
 func (w World) CanCharactorMoveInDirection(character *Character, direction string) bool {

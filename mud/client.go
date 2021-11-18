@@ -25,8 +25,7 @@ type Client struct {
 	broadcast chan string
 	reply     chan string
 
-	registry  *CommandRegistry
-	Character *Character
+	registry *CommandRegistry
 }
 
 func NewClient(conn net.Conn, id ClientId, registry *CommandRegistry) *Client {
@@ -36,7 +35,6 @@ func NewClient(conn net.Conn, id ClientId, registry *CommandRegistry) *Client {
 		broadcast: make(chan string),
 		reply:     make(chan string),
 		registry:  registry,
-		Character: nil,
 	}
 
 	return client

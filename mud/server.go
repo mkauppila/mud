@@ -31,7 +31,6 @@ func NewServer(idGenerator IdGenerator) Server {
 
 func (s *Server) AddNewClient(conn net.Conn) error {
 	clientId, err := s.idGenerator()
-	fmt.Println("client id ", clientId)
 	if err != nil {
 		return err
 	}
@@ -47,9 +46,9 @@ func (s *Server) AddNewClient(conn net.Conn) error {
 	return nil
 }
 
-func (s *Server) removeClientAtIndex(clientId ClientId) {
+func (s *Server) removeClient(id ClientId) {
 	s.clientsMutex.Lock()
-	delete(s.clients, clientId)
+	delete(s.clients, id)
 	s.clientsMutex.Unlock()
 }
 
