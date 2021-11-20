@@ -1,46 +1,41 @@
 package mud
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
+
+type Command struct {
+	command  string // TODO: make it enum: type disconnect, say
+	contents string
+}
 
 type ServerAction func(server *Server) error
 type CommandAction func(command Command, clientId ClientId) ServerAction
 
 type CommandRegistry struct {
 	commandInfos map[string]CommandInfo
-	parser       CommandParser
 }
 
-func NewLoginCommandRegistry(parser CommandParser) *CommandRegistry {
-	// TODO: pass the loginCommandInfos as a parameter
+func NewCommandRegistry(givenCommandInfos []CommandInfo) *CommandRegistry {
 	commandInfos := make(map[string]CommandInfo)
-	for _, i := range loginCommandInfos {
+	for _, i := range givenCommandInfos {
 		commandInfos[i.command] = i
 	}
 
 	registry := &CommandRegistry{
 		commandInfos: commandInfos,
-		parser:       parser,
 	}
 
 	return registry
 }
 
-func NewInGameCommandRegistry(parser CommandParser) *CommandRegistry {
-	// define the shit in an array
-	// create the action registry based on it
-	// key: <the whole action info>
-	// return just return the function after the parsing
-	commandInfos := make(map[string]CommandInfo)
-	for _, i := range ingameCommandInfos {
-		commandInfos[i.command] = i
-	}
+func NewLoginCommandRegistry() *CommandRegistry {
+	return NewCommandRegistry(loginCommandInfos)
+}
 
-	registry := &CommandRegistry{
-		commandInfos: commandInfos,
-		parser:       parser,
-	}
-
-	return registry
+func NewInGameCommandRegistry() *CommandRegistry {
+	return NewCommandRegistry(ingameCommandInfos)
 }
 
 func (c *CommandRegistry) ConnectAction(clientId ClientId) ServerAction {
@@ -52,7 +47,7 @@ func (c *CommandRegistry) DisconnectAction(clientId ClientId) ServerAction {
 }
 
 func (c *CommandRegistry) InputToAction(line string, clientId ClientId) ServerAction {
-	command := c.parser(line)
+	command := c.parseCommand(line)
 
 	info, ok := c.commandInfos[command.command]
 	if ok {
@@ -60,6 +55,32 @@ func (c *CommandRegistry) InputToAction(line string, clientId ClientId) ServerAc
 	} else {
 		return UnknownCommandAction(command, clientId)
 	}
+}
+
+func (c *CommandRegistry) parseCommand(message string) Command {
+	message = strings.TrimSpace(message)
+
+	index := strings.IndexAny(message, " ")
+	var command string
+	if index >= 0 {
+		command = message[:index]
+	} else {
+		command = message
+	}
+
+	for _, v := range c.commandInfos {
+		if command == v.command {
+			return v.parser(command, message[index+1:])
+		}
+
+		for _, alias := range v.aliases {
+			if command == alias {
+				return v.parser(command, message[index+1:])
+			}
+		}
+	}
+
+	return Command{"unknown", message}
 }
 
 func (c *CommandRegistry) CommandsWithDescriptions() []CommandWithDescription {

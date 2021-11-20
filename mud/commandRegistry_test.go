@@ -11,9 +11,10 @@ func TestCommandParsing(t *testing.T) {
 		{msg: "go west", want: Command{"go", "west"}},
 		{msg: "w", want: Command{"go", "west"}},
 	}
+	registry := NewInGameCommandRegistry()
 
 	for i, tc := range testCases {
-		command := ParseInGameCommand(tc.msg)
+		command := registry.parseCommand(tc.msg)
 		if command.command != tc.want.command {
 			t.Fatalf("Testcase %d: Got %s, expected %s", i, command.command, tc.want.command)
 		}

@@ -22,7 +22,7 @@ func NewServer(idGenerator IdGenerator) Server {
 		actions:      make(chan ServerAction),
 		clientsMutex: sync.RWMutex{},
 		clients:      make(map[ClientId]*Client),
-		registry:     NewLoginCommandRegistry(LoginParseCommand),
+		registry:     NewLoginCommandRegistry(),
 		world:        NewWorld(),
 		timeStep:     time.Second,
 		idGenerator:  idGenerator,

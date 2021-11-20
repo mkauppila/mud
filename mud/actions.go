@@ -23,38 +23,71 @@ func (e ErrUnknownCharacter) Error() string {
 
 type CommandInfo struct {
 	command     string
+	aliases     []string
 	description string
+	parser      func(command, rest string) Command
 	action      CommandAction
 }
 
 var loginCommandInfos = []CommandInfo{
 	{
 		command:     "choose",
+		aliases:     []string{},
 		description: "Choose a character name",
-		action:      NameCharacterCommandAction,
+		parser: func(command, rest string) Command {
+			return Command{"choose", command}
+		},
+		action: NameCharacterCommandAction,
 	},
 }
 
 var ingameCommandInfos = []CommandInfo{
 	{
 		command:     "help",
+		aliases:     []string{},
 		description: "List all the commands and stuff",
-		action:      HelpCommandAction,
+		parser: func(command, rest string) Command {
+			return Command{"help", ""}
+		},
+		action: HelpCommandAction,
 	},
 	{
 		command:     "say",
+		aliases:     []string{},
 		description: "Say something",
-		action:      SayCommandAction,
+		parser: func(command, rest string) Command {
+			return Command{"say", rest}
+		},
+		action: SayCommandAction,
 	},
 	{
 		command:     "go",
+		aliases:     []string{"n", "e", "s", "w"},
 		description: "Move to east, west, north or south",
-		action:      GoCommandAction,
+		parser: func(command, rest string) Command {
+			message := rest
+			switch command {
+			case "n":
+				message = "north"
+			case "e":
+				message = "east"
+			case "s":
+				message = "south"
+			case "w":
+				message = "west"
+			}
+			return Command{"go", message}
+		},
+		action: GoCommandAction,
 	},
 	{
 		command:     "smoke",
+		aliases:     []string{},
 		description: "You can _start_ or _stop_ smoking",
-		action:      SmokeCommandAction,
+		parser: func(command, rest string) Command {
+			return Command{"smoke", rest}
+		},
+		action: SmokeCommandAction,
 	},
 }
 
@@ -109,7 +142,7 @@ func NameCharacterCommandAction(command Command, clientId ClientId) ServerAction
 		ch.Broadcast = func(message string) {
 			client.broadcast <- message
 		}
-		client.SetCommandRegistry(NewInGameCommandRegistry(ParseInGameCommand))
+		client.SetCommandRegistry(NewInGameCommandRegistry())
 
 		s.world.InsertCharacterOnConnect(ch)
 
@@ -233,11 +266,10 @@ func HelpCommandAction(command Command, clientId ClientId) ServerAction {
 		if !ok {
 			return nil
 		}
-		c := client.registry.CommandsWithDescriptions()
 
 		var output = "help:\n"
-		for _, cc := range c {
-			output = fmt.Sprintf("%s\t%s\n", output, cc)
+		for _, cwd := range client.registry.CommandsWithDescriptions() {
+			output = fmt.Sprintf("%s\t%s\n", output, cwd)
 		}
 
 		client.reply <- output
