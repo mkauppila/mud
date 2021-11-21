@@ -164,12 +164,12 @@ func NameCharacterCommandAction(command Command, clientId ClientId) ServerAction
 
 func UnknownCommandAction(command Command, clientId ClientId) ServerAction {
 	return func(s *Server) error {
-		ch := s.world.getCharacter(clientId)
-		if ch == nil {
-			return ErrUnknownCharacter{id: clientId, action: command.command}
+		client := s.getClient(clientId)
+		if client == nil {
+			return ErrUnknownClientId{id: clientId}
 		}
 
-		ch.Reply(fmt.Sprintf("What is %s?\n", command.contents))
+		client.reply <- fmt.Sprintf("What is %s?\n", command.contents)
 
 		return nil
 	}
