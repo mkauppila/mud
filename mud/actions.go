@@ -199,7 +199,9 @@ func GoCommandAction(command Command, clientId ClientId) ServerAction {
 			return ErrUnknownCharacter{id: clientId, action: command.command}
 		}
 
-		if s.world.CanCharactorMoveInDirection(ch, command.contents) {
+		if command.contents == "" {
+			ch.Reply("In which direction do you want to move?\n")
+		} else if s.world.CanCharactorMoveInDirection(ch, command.contents) {
 			// broadcast to old room
 			s.world.BroadcastToOtherCharactersInRoom(
 				ch,

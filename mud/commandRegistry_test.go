@@ -9,6 +9,7 @@ func TestCommandParsing(t *testing.T) {
 	}{
 		{msg: "say hello world", want: Command{"say", "hello world"}},
 		{msg: "go west", want: Command{"go", "west"}},
+		{msg: "go", want: Command{"go", ""}},
 		{msg: "w", want: Command{"go", "west"}},
 		{msg: "help", want: Command{"help", ""}},
 		{msg: "smoke start", want: Command{"smoke", "start"}},

@@ -61,21 +61,23 @@ func (c *CommandRegistry) parseCommand(message string) Command {
 	message = strings.TrimSpace(message)
 
 	index := strings.IndexAny(message, " ")
-	var command string
+	var command, rest string
 	if index >= 0 {
 		command = message[:index]
+		rest = message[index+1:]
 	} else {
 		command = message
+		rest = ""
 	}
 
 	for _, v := range c.commandInfos {
 		if command == v.command {
-			return v.parser(command, message[index+1:])
+			return v.parser(command, rest)
 		}
 
 		for _, alias := range v.aliases {
 			if command == alias {
-				return v.parser(command, message[index+1:])
+				return v.parser(command, rest)
 			}
 		}
 	}
