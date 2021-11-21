@@ -127,6 +127,19 @@ func DisconnectCommandAction(command Command, clientId ClientId) ServerAction {
 	}
 }
 
+func UnknownCommandAction(command Command, clientId ClientId) ServerAction {
+	return func(s *Server) error {
+		client := s.getClient(clientId)
+		if client == nil {
+			return ErrUnknownClientId{id: clientId}
+		}
+
+		client.reply <- fmt.Sprintf("What is %s?\n", command.contents)
+
+		return nil
+	}
+}
+
 func NameCharacterCommandAction(command Command, clientId ClientId) ServerAction {
 	return func(s *Server) error {
 		client := s.getClient(clientId)
@@ -157,19 +170,6 @@ func NameCharacterCommandAction(command Command, clientId ClientId) ServerAction
 			ch,
 			fmt.Sprintf("%v joined!\n", ch.name),
 		)
-
-		return nil
-	}
-}
-
-func UnknownCommandAction(command Command, clientId ClientId) ServerAction {
-	return func(s *Server) error {
-		client := s.getClient(clientId)
-		if client == nil {
-			return ErrUnknownClientId{id: clientId}
-		}
-
-		client.reply <- fmt.Sprintf("What is %s?\n", command.contents)
 
 		return nil
 	}

@@ -11,7 +11,6 @@ type Server struct {
 	actions      chan ServerAction
 	clientsMutex sync.RWMutex
 	clients      map[ClientId]*Client
-	registry     *CommandRegistry
 	world        *World
 	timeStep     time.Duration
 	idGenerator  IdGenerator
@@ -22,7 +21,6 @@ func NewServer(idGenerator IdGenerator) Server {
 		actions:      make(chan ServerAction),
 		clientsMutex: sync.RWMutex{},
 		clients:      make(map[ClientId]*Client),
-		registry:     NewLoginCommandRegistry(),
 		world:        NewWorld(),
 		timeStep:     time.Second,
 		idGenerator:  idGenerator,
@@ -35,7 +33,7 @@ func (s *Server) AddNewClient(conn net.Conn) error {
 		return err
 	}
 
-	client := NewClient(conn, clientId, s.registry)
+	client := NewClient(conn, clientId, NewLoginCommandRegistry())
 	s.clientsMutex.Lock()
 	s.clients[clientId] = client
 	s.clientsMutex.Unlock()
