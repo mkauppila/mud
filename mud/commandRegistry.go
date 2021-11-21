@@ -35,7 +35,7 @@ func NewLoginCommandRegistry() *CommandRegistry {
 }
 
 func NewInGameCommandRegistry() *CommandRegistry {
-	return NewCommandRegistry(ingameCommandInfos)
+	return NewCommandRegistry(inGameCommandInfos)
 }
 
 func (c *CommandRegistry) ConnectAction(clientId ClientId) ServerAction {

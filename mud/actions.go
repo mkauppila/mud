@@ -41,7 +41,7 @@ var loginCommandInfos = []CommandInfo{
 	},
 }
 
-var ingameCommandInfos = []CommandInfo{
+var inGameCommandInfos = []CommandInfo{
 	{
 		command:     "help",
 		aliases:     []string{},
