@@ -1,7 +1,6 @@
 package mud
 
 import (
-	"fmt"
 	"net"
 	"sync"
 	"time"
