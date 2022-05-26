@@ -81,6 +81,15 @@ var inGameCommandInfos = []CommandInfo{
 		action: GoCommandAction,
 	},
 	{
+		command:     "look",
+		aliases:     []string{"l"},
+		description: "Look around the room",
+		parser: func(command, rest string) Command {
+			return Command{"look", rest}
+		},
+		action: LookCommandAction,
+	},
+	{
 		command:     "smoke",
 		aliases:     []string{},
 		description: "You can _start_ or _stop_ smoking",
@@ -187,6 +196,20 @@ func SayCommandAction(command Command, clientId ClientId) ServerAction {
 			ch,
 			fmt.Sprintf("%s said %s\n", ch.name, command.contents),
 		)
+
+		return nil
+	}
+}
+
+func LookCommandAction(command Command, clientId ClientId) ServerAction {
+	return func(s *Server) error {
+		ch := s.world.getCharacter(clientId)
+		if ch == nil {
+			return ErrUnknownCharacter{id: clientId, action: command.command}
+		}
+
+		room := s.world.rooms[ch.Location]
+		ch.Reply(fmt.Sprintf("You look around\n%s\n", room.description))
 
 		return nil
 	}
