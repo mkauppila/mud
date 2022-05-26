@@ -35,7 +35,7 @@ var loginCommandInfos = []CommandInfo{
 		aliases:     []string{},
 		description: "Choose a character name",
 		parser: func(command, rest string) Command {
-			return Command{"choose", command}
+			return Command{"choose", rest}
 		},
 		action: NameCharacterCommandAction,
 	},
