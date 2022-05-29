@@ -1,4 +1,4 @@
-package mud
+package server
 
 import "fmt"
 

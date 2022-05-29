@@ -1,6 +1,6 @@
 
 run:
-	go run main.go
+	go run cmd/server.go
 .PHONY: run
 
 build-docker:

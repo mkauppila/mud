@@ -1,4 +1,4 @@
-package mud
+package server
 
 type Room struct {
 	description string

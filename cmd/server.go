@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	mud "github.com/mkauppila/mud/mud"
+	"github.com/mkauppila/mud/internal/server"
 )
 
 func main() {
@@ -17,7 +17,7 @@ func main() {
 	}
 	defer ln.Close()
 
-	server := mud.NewServer(mud.UuidGenerator)
+	server := server.NewServer(server.UuidGenerator)
 	go server.Run()
 
 	for {
