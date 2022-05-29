@@ -2,7 +2,28 @@ package server
 
 import "testing"
 
-func TestCommandParsing(t *testing.T) {
+func TestParsingLoginCommandRegistry(t *testing.T) {
+	testCases := []struct {
+		msg  string
+		want Command
+	}{
+		{msg: "choose name", want: Command{"choose", "name"}},
+	}
+
+	registry := NewLoginCommandRegistry()
+
+	for i, tc := range testCases {
+		command := registry.parseCommand(tc.msg)
+		if command.command != tc.want.command {
+			t.Fatalf("Testcase %d: Got %s, expected %s", i, command.command, tc.want.command)
+		}
+		if command.contents != tc.want.contents {
+			t.Fatalf("Testcase %d: Got %s, expected %s", i, command.contents, tc.want.contents)
+		}
+	}
+}
+
+func TestParsingInGameCommands(t *testing.T) {
 	testCases := []struct {
 		msg  string
 		want Command
