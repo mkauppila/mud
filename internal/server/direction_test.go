@@ -11,7 +11,7 @@ func TestDirectionParsing(t *testing.T) {
 		{input: "east", expected: East},
 		{input: "south", expected: South},
 		{input: "west", expected: West},
-		{input: "error", expected: Error},
+		{input: "error", expected: None},
 	}
 
 	for _, tc := range testCases {

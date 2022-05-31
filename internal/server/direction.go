@@ -3,7 +3,7 @@ package server
 type Direction uint8
 
 const (
-	Error Direction = 0
+	None  Direction = 0x0
 	North           = 0x1
 	East            = 0x2
 	South           = 0x4
@@ -22,5 +22,5 @@ func DirectionFromString(dir string) Direction {
 		return South
 	}
 
-	return Error
+	return None
 }
