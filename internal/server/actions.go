@@ -169,7 +169,7 @@ func NameCharacterCommandAction(command Command, clientId ClientId) ServerAction
 		s.world.InsertCharacterOnConnect(ch)
 
 		ch.Reply(
-			fmt.Sprintf("%s woke up the world\n%s\n",
+			fmt.Sprintf("%s woke up in the world\n%s\n",
 				ch.name,
 				s.world.DescribeRoom(ch.Coordinate)),
 		)
@@ -208,8 +208,7 @@ func LookCommandAction(command Command, clientId ClientId) ServerAction {
 			return ErrUnknownCharacter{id: clientId, action: command.command}
 		}
 
-		room := s.world.rooms[ch.Coordinate]
-		ch.Reply(fmt.Sprintf("You look around\n%s\n", room.description))
+		ch.Reply(fmt.Sprintf("You look around\n%s\n", s.world.DescribeRoom(ch.Coordinate)))
 
 		return nil
 	}
@@ -245,7 +244,7 @@ func GoCommandAction(command Command, clientId ClientId) ServerAction {
 				fmt.Sprintf("%s entered from %s\n", ch.name, command.contents),
 			)
 		} else {
-			ch.Reply("Ouch, it seems the world has some boundaries\n")
+			ch.Reply("You cannot go that way!\n")
 		}
 
 		return nil

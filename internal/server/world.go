@@ -1,6 +1,9 @@
 package server
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type World struct {
 	characters map[Coordinate][]*Character
@@ -79,12 +82,7 @@ func (w World) RemoveCharacterOnDisconnect(ch *Character) {
 }
 
 func (w World) CanCharactorMoveInDirection(character *Character, direction Direction) bool {
-	newLoc := CoordinateInDirection(character.Coordinate, direction)
-	if _, ok := w.rooms[newLoc]; !ok {
-		return false
-	} else {
-		return true
-	}
+	return w.rooms[character.Coordinate].exits&direction != 0
 }
 
 func (w World) MoveCharacterInDirection(character *Character, direction Direction) {
@@ -136,5 +134,6 @@ func (w World) UpdateCharacterStates(timeStep time.Duration) {
 }
 
 func (w World) DescribeRoom(location Coordinate) string {
-	return w.rooms[location].description
+	room := w.rooms[location]
+	return fmt.Sprintf("%s\n%s\n", room.description, DirectionAsStrings(room.exits))
 }

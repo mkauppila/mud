@@ -14,12 +14,13 @@ func NewRoom(description string, location Coordinate, exits Direction) Room {
 	return Room{
 		description: description,
 		location:    location,
+		exits:       exits,
 	}
 }
 
 func BasicMap() []Room {
 	return []Room{
-		NewRoom("This is the room", Coordinate{X: 0, Y: 0}, None),
-		NewRoom("This another room", Coordinate{X: 1, Y: 0}, None),
+		NewRoom("This is the room", Coordinate{X: 0, Y: 0}, East),
+		NewRoom("This another room", Coordinate{X: 1, Y: 0}, West),
 	}
 }

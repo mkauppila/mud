@@ -24,3 +24,21 @@ func DirectionFromString(dir string) Direction {
 
 	return None
 }
+
+func DirectionAsStrings(dir Direction) []string {
+	dirs := make([]string, 2)
+	if dir&West != 0 {
+		dirs = append(dirs, "west")
+	}
+	if dir&East != 0 {
+		dirs = append(dirs, "east")
+	}
+	if dir&North != 0 {
+		dirs = append(dirs, "north")
+	}
+	if dir&South != 0 {
+		dirs = append(dirs, "south")
+	}
+
+	return dirs
+}

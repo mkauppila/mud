@@ -12,7 +12,7 @@ func TestRoomCreation(t *testing.T) {
 	if room.location.X != 0 || room.location.Y != 0 {
 		t.Fatal("location is incorrect")
 	}
-	if room.exits != 0 {
+	if room.exits != West {
 		t.Fatal("exits are incorrect")
 	}
 }
