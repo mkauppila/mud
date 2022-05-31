@@ -3,14 +3,14 @@ package server
 import "time"
 
 type World struct {
-	characters map[Location][]*Character
-	rooms      map[Location]Room
+	characters map[Coordinate][]*Character
+	rooms      map[Coordinate]Room
 }
 
 func NewWorld() *World {
 	world := &World{
-		characters: make(map[Location][]*Character),
-		rooms:      make(map[Location]Room),
+		characters: make(map[Coordinate][]*Character),
+		rooms:      make(map[Coordinate]Room),
 	}
 
 	for _, room := range BasicMap() {
@@ -21,7 +21,7 @@ func NewWorld() *World {
 }
 
 func (w World) InsertCharacterOnConnect(character *Character) {
-	loc := character.Location
+	loc := character.Coordinate
 
 	list, ok := w.characters[loc]
 	if !ok {
@@ -33,7 +33,7 @@ func (w World) InsertCharacterOnConnect(character *Character) {
 }
 
 func (w World) OtherCharactersInRoom(currentCharacter *Character) []*Character {
-	inRoom := w.characters[currentCharacter.Location]
+	inRoom := w.characters[currentCharacter.Coordinate]
 
 	var others []*Character
 	for _, ch := range inRoom {
@@ -45,7 +45,7 @@ func (w World) OtherCharactersInRoom(currentCharacter *Character) []*Character {
 }
 
 func (w World) BroadcastToOtherCharactersInRoom(currentCh *Character, message string) {
-	inRoom := w.characters[currentCh.Location]
+	inRoom := w.characters[currentCh.Coordinate]
 
 	for _, ch := range inRoom {
 		if ch.id != currentCh.id {
@@ -67,7 +67,7 @@ func (w World) getCharacter(id ClientId) *Character {
 
 func (w World) RemoveCharacterOnDisconnect(ch *Character) {
 	// remove the disconnecting ch from the room
-	chs := w.characters[ch.Location]
+	chs := w.characters[ch.Coordinate]
 	for i, c := range chs {
 		if c.id == ch.id {
 			chs[i] = chs[(len(chs) - 1)]
@@ -75,11 +75,11 @@ func (w World) RemoveCharacterOnDisconnect(ch *Character) {
 			break
 		}
 	}
-	w.characters[ch.Location] = chs
+	w.characters[ch.Coordinate] = chs
 }
 
 func (w World) CanCharactorMoveInDirection(character *Character, direction Direction) bool {
-	newLoc := NewLocationInDirection(character.Location, direction)
+	newLoc := CoordinateInDirection(character.Coordinate, direction)
 	if _, ok := w.rooms[newLoc]; !ok {
 		return false
 	} else {
@@ -88,8 +88,8 @@ func (w World) CanCharactorMoveInDirection(character *Character, direction Direc
 }
 
 func (w World) MoveCharacterInDirection(character *Character, direction Direction) {
-	old := NewLocation(character.Location.X, character.Y)
-	new := NewLocationInDirection(old, direction)
+	old := NewCoordinate(character.Coordinate.X, character.Y)
+	new := CoordinateInDirection(old, direction)
 
 	// add to new location
 	list, ok := w.characters[new]
@@ -99,7 +99,7 @@ func (w World) MoveCharacterInDirection(character *Character, direction Directio
 		list = append(list, character)
 		w.characters[new] = list
 	}
-	character.Location = new
+	character.Coordinate = new
 
 	// remove character from old
 	list, ok = w.characters[old]
@@ -135,6 +135,6 @@ func (w World) UpdateCharacterStates(timeStep time.Duration) {
 	}
 }
 
-func (w World) DescribeRoom(location Location) string {
+func (w World) DescribeRoom(location Coordinate) string {
 	return w.rooms[location].description
 }

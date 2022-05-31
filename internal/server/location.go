@@ -2,19 +2,19 @@ package server
 
 import "fmt"
 
-type Location struct {
+type Coordinate struct {
 	X, Y int
 }
 
-func NewLocation(x, y int) Location {
-	return Location{X: x, Y: y}
+func NewCoordinate(x, y int) Coordinate {
+	return Coordinate{X: x, Y: y}
 }
 
-func (l Location) String() string {
+func (l Coordinate) String() string {
 	return fmt.Sprintf("(%d, %d)", l.X, l.Y)
 }
 
-func NewLocationInDirection(location Location, direction Direction) Location {
+func CoordinateInDirection(location Coordinate, direction Direction) Coordinate {
 	switch direction {
 	case West:
 		location.X--

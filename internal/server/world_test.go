@@ -26,7 +26,7 @@ func TestBasicWorldFunctionality(t *testing.T) {
 		t.Fatal("There should not be other characters in the room")
 	}
 
-	if w.getCharacter(clientId).Location == w.getCharacter(clientId2).Location {
+	if w.getCharacter(clientId).Coordinate == w.getCharacter(clientId2).Coordinate {
 		t.Fatal("after movement characters are not in the same location")
 	}
 

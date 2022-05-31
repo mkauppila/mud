@@ -9,7 +9,7 @@ type Character struct {
 	id             ClientId
 	health, attack int
 	name           string
-	Location
+	Coordinate
 
 	Reply     func(string)
 	Broadcast func(string)
@@ -19,11 +19,11 @@ type Character struct {
 
 func NewCharacter(id ClientId, name string /*, reply func(string), broadcast func(string)*/) *Character {
 	ch := &Character{
-		id:       id,
-		health:   30,
-		attack:   1,
-		name:     name,
-		Location: Location{X: 0, Y: 0},
+		id:         id,
+		health:     30,
+		attack:     1,
+		name:       name,
+		Coordinate: Coordinate{X: 0, Y: 0},
 	}
 
 	ch.SetState("idle")

@@ -171,7 +171,7 @@ func NameCharacterCommandAction(command Command, clientId ClientId) ServerAction
 		ch.Reply(
 			fmt.Sprintf("%s woke up the world\n%s\n",
 				ch.name,
-				s.world.DescribeRoom(ch.Location)),
+				s.world.DescribeRoom(ch.Coordinate)),
 		)
 		ch.SetState("idle")
 
@@ -208,7 +208,7 @@ func LookCommandAction(command Command, clientId ClientId) ServerAction {
 			return ErrUnknownCharacter{id: clientId, action: command.command}
 		}
 
-		room := s.world.rooms[ch.Location]
+		room := s.world.rooms[ch.Coordinate]
 		ch.Reply(fmt.Sprintf("You look around\n%s\n", room.description))
 
 		return nil
@@ -236,7 +236,7 @@ func GoCommandAction(command Command, clientId ClientId) ServerAction {
 			ch.Reply(
 				fmt.Sprintf("You move to %s\n%s\n",
 					command.contents,
-					s.world.DescribeRoom(ch.Location)),
+					s.world.DescribeRoom(ch.Coordinate)),
 			)
 
 			// broadcast to new room

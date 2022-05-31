@@ -3,7 +3,7 @@ package server
 import "testing"
 
 func TestRoomCreation(t *testing.T) {
-	room := NewRoom("desc", NewLocation(0, 0))
+	room := NewRoom("desc", NewCoordinate(0, 0))
 
 	if room.description != "desc" {
 		t.Fatal("Description now match")
