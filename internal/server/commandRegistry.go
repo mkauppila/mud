@@ -58,7 +58,7 @@ func (c *CommandRegistry) InputToAction(line string, clientId ClientId) ServerAc
 }
 
 func (c *CommandRegistry) parseCommand(message string) Command {
-	message = strings.TrimSpace(message)
+	message = strings.ToLower(strings.TrimSpace(message))
 
 	index := strings.IndexAny(message, " ")
 	var command, rest string

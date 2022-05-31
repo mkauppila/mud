@@ -36,6 +36,7 @@ func TestParsingInGameCommands(t *testing.T) {
 		{msg: "smoke start", want: Command{"smoke", "start"}},
 		{msg: "smoke stop", want: Command{"smoke", "stop"}},
 		{msg: "look", want: Command{"look", ""}},
+		{msg: "LooK", want: Command{"look", ""}},
 	}
 	registry := NewInGameCommandRegistry()
 
