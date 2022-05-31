@@ -78,7 +78,7 @@ func (w World) RemoveCharacterOnDisconnect(ch *Character) {
 	w.characters[ch.Location] = chs
 }
 
-func (w World) CanCharactorMoveInDirection(character *Character, direction string) bool {
+func (w World) CanCharactorMoveInDirection(character *Character, direction Direction) bool {
 	newLoc := NewLocationInDirection(character.Location, direction)
 	if _, ok := w.rooms[newLoc]; !ok {
 		return false
@@ -87,7 +87,7 @@ func (w World) CanCharactorMoveInDirection(character *Character, direction strin
 	}
 }
 
-func (w World) MoveCharacterInDirection(character *Character, direction string) {
+func (w World) MoveCharacterInDirection(character *Character, direction Direction) {
 	old := NewLocation(character.Location.X, character.Y)
 	new := NewLocationInDirection(old, direction)
 

@@ -14,15 +14,15 @@ func (l Location) String() string {
 	return fmt.Sprintf("(%d, %d)", l.X, l.Y)
 }
 
-func NewLocationInDirection(location Location, direction string) Location {
+func NewLocationInDirection(location Location, direction Direction) Location {
 	switch direction {
-	case "west":
+	case West:
 		location.X--
-	case "east":
+	case East:
 		location.X++
-	case "north":
+	case North:
 		location.Y--
-	case "south":
+	case South:
 		location.Y++
 	}
 

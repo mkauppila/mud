@@ -222,16 +222,17 @@ func GoCommandAction(command Command, clientId ClientId) ServerAction {
 			return ErrUnknownCharacter{id: clientId, action: command.command}
 		}
 
+		direction := DirectionFromString(command.contents)
 		if command.contents == "" {
 			ch.Reply("In which direction do you want to move?\n")
-		} else if s.world.CanCharactorMoveInDirection(ch, command.contents) {
+		} else if s.world.CanCharactorMoveInDirection(ch, direction) {
 			// broadcast to old room
 			s.world.BroadcastToOtherCharactersInRoom(
 				ch,
 				fmt.Sprintf("%s moved to %s\n", ch.name, command.contents),
 			)
 
-			s.world.MoveCharacterInDirection(ch, command.contents)
+			s.world.MoveCharacterInDirection(ch, direction)
 			ch.Reply(
 				fmt.Sprintf("You move to %s\n%s\n",
 					command.contents,
