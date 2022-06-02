@@ -47,6 +47,10 @@ func (c *Client) Listen(actions chan<- ServerAction) {
 	connectReply := <-c.reply
 	c.directReply(connectReply)
 
+	// this should ideally only handle the tcp connection
+	// pass the parsed message forward that would handle the rest
+	//  that would handle command registry and events
+
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {

@@ -1,4 +1,4 @@
-package server
+package game
 
 type Room struct {
 	description string

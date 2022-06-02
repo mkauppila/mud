@@ -10,16 +10,13 @@ type Command struct {
 	contents string
 }
 
-type ServerAction func(server *Server) error
-type CommandAction func(command Command, clientId ClientId) ServerAction
-
 type CommandRegistry struct {
 	commandInfos map[string]CommandInfo
 }
 
-func NewCommandRegistry(givenCommandInfos []CommandInfo) *CommandRegistry {
+func NewCommandRegistry(givenCommandInfo []CommandInfo) *CommandRegistry {
 	commandInfos := make(map[string]CommandInfo)
-	for _, i := range givenCommandInfos {
+	for _, i := range givenCommandInfo {
 		commandInfos[i.command] = i
 	}
 

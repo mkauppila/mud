@@ -4,13 +4,15 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/mkauppila/mud/internal/game"
 )
 
 type Server struct {
 	actions      chan ServerAction
 	clientsMutex sync.RWMutex
 	clients      map[ClientId]*Client
-	world        *World
+	world        *game.World
 	timeStep     time.Duration
 	idGenerator  IdGenerator
 }
@@ -20,7 +22,7 @@ func NewServer(idGenerator IdGenerator) Server {
 		actions:      make(chan ServerAction),
 		clientsMutex: sync.RWMutex{},
 		clients:      make(map[ClientId]*Client),
-		world:        NewWorld(),
+		world:        game.NewWorld(),
 		timeStep:     time.Second,
 		idGenerator:  idGenerator,
 	}
@@ -63,6 +65,14 @@ func (s *Server) getClient(id ClientId) *Client {
 func (s *Server) Run() {
 	ticker := time.NewTicker(s.timeStep)
 	defer ticker.Stop()
+
+	// lets move to this world
+	// it can handle all the events
+	// a couple of them connect/disconnect need to be augmented by
+	// the server though
+
+	// world will be contact between the game and the server
+	// logic
 
 	var actions []ServerAction
 	for {

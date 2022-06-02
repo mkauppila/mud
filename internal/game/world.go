@@ -1,4 +1,4 @@
-package server
+package game
 
 import (
 	"fmt"
@@ -40,7 +40,7 @@ func (w World) OtherCharactersInRoom(currentCharacter *Character) []*Character {
 
 	var others []*Character
 	for _, ch := range inRoom {
-		if ch.id != currentCharacter.id {
+		if ch.Id != currentCharacter.Id {
 			others = append(others, ch)
 		}
 	}
@@ -51,16 +51,16 @@ func (w World) BroadcastToOtherCharactersInRoom(currentCh *Character, message st
 	inRoom := w.characters[currentCh.Coordinate]
 
 	for _, ch := range inRoom {
-		if ch.id != currentCh.id {
+		if ch.Id != currentCh.Id {
 			ch.Broadcast(message)
 		}
 	}
 }
 
-func (w World) getCharacter(id ClientId) *Character {
+func (w World) GetCharacter(id ClientId) *Character {
 	for _, chs := range w.characters {
 		for _, ch := range chs {
-			if ch.id == id {
+			if ch.Id == id {
 				return ch
 			}
 		}
@@ -72,7 +72,7 @@ func (w World) RemoveCharacterOnDisconnect(ch *Character) {
 	// remove the disconnecting ch from the room
 	chs := w.characters[ch.Coordinate]
 	for i, c := range chs {
-		if c.id == ch.id {
+		if c.Id == ch.Id {
 			chs[i] = chs[(len(chs) - 1)]
 			chs = chs[:len(chs)-1]
 			break
@@ -86,7 +86,7 @@ func (w World) CanCharactorMoveInDirection(character *Character, direction Direc
 }
 
 func (w World) MoveCharacterInDirection(character *Character, direction Direction) {
-	old := NewCoordinate(character.Coordinate.X, character.Y)
+	old := NewCoordinate(character.Coordinate.X, character.Coordinate.Y)
 	new := CoordinateInDirection(old, direction)
 
 	// add to new location
@@ -104,7 +104,7 @@ func (w World) MoveCharacterInDirection(character *Character, direction Directio
 	if ok {
 		ic := -1
 		for i, c := range list {
-			if character.name == c.name {
+			if character.Name == c.Name {
 				ic = i
 				break
 			}

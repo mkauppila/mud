@@ -1,15 +1,22 @@
-package server
+package game
 
 import (
 	"fmt"
 	"time"
 )
 
+type ClientId string
+
+/*
+character would have command registry
+
+
+*/
 type Character struct {
-	id             ClientId
+	Id             ClientId
 	health, attack int
-	name           string
-	Coordinate
+	Name           string
+	Coordinate     Coordinate
 
 	Reply     func(string)
 	Broadcast func(string)
@@ -19,10 +26,10 @@ type Character struct {
 
 func NewCharacter(id ClientId, name string /*, reply func(string), broadcast func(string)*/) *Character {
 	ch := &Character{
-		id:         id,
+		Id:         id,
 		health:     30,
 		attack:     1,
-		name:       name,
+		Name:       name,
 		Coordinate: Coordinate{X: 0, Y: 0},
 	}
 
@@ -47,7 +54,7 @@ func (c *Character) SetState(state CharacterState) {
 }
 
 func (c Character) String() string {
-	return fmt.Sprintf("%s - %s\n", c.id, c.name)
+	return fmt.Sprintf("%s - %s\n", c.Id, c.Name)
 }
 
 type CharacterState string
@@ -90,7 +97,7 @@ func CreateSmokingPipeState() State {
 
 				world.BroadcastToOtherCharactersInRoom(
 					ch,
-					fmt.Sprintf("%s puffs the pipe\n", ch.name),
+					fmt.Sprintf("%s puffs the pipe\n", ch.Name),
 				)
 			} else {
 				ch.Broadcast("You run out of tobacco and stopped smoking the pipe\n")
@@ -98,7 +105,7 @@ func CreateSmokingPipeState() State {
 
 				world.BroadcastToOtherCharactersInRoom(
 					ch,
-					fmt.Sprintf("%s stopped smoking the pipe\n", ch.name),
+					fmt.Sprintf("%s stopped smoking the pipe\n", ch.Name),
 				)
 			}
 		},
