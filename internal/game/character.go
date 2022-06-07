@@ -9,6 +9,7 @@ type ClientId string
 
 /*
 character would have command registry
+client would have a link to the character
 
 
 */
@@ -21,7 +22,8 @@ type Character struct {
 	Reply     func(string)
 	Broadcast func(string)
 
-	state State
+	state    State
+	commands *CommandRegistry
 }
 
 func NewCharacter(id ClientId, name string /*, reply func(string), broadcast func(string)*/) *Character {

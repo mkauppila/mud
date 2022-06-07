@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/google/uuid"
+	"github.com/mkauppila/mud/internal/game"
 )
 
 type ClientId string
@@ -25,45 +26,91 @@ type Client struct {
 	broadcast chan string
 	reply     chan string
 
-	registry *CommandRegistry
+	world game.Worlder
 }
 
-func NewClient(conn net.Conn, id ClientId, registry *CommandRegistry) *Client {
+func NewClient(conn net.Conn, id ClientId, world game.Worlder) *Client {
 	client := &Client{
 		id:        id,
 		conn:      conn,
 		broadcast: make(chan string),
 		reply:     make(chan string),
-		registry:  registry,
+		world:     world,
 	}
 
 	return client
 }
 
-func (c *Client) Listen(actions chan<- ServerAction) {
+// func DisconnectCommandAction(command Command, clientId ClientId) WorldAction {
+// 	return func(s *Server) error {
+// 		client := s.getClient(clientId)
+// 		if client == nil {
+// 			return ErrUnknownClientId{id: clientId}
+// 		}
+// 		if ch := s.world.GetCharacter(game.ClientId(clientId)); ch != nil {
+// 			s.world.RemoveCharacterOnDisconnect(ch)
+// 			s.world.BroadcastToOtherCharactersInRoom(
+// 				ch,
+// 				fmt.Sprintf("%v disconnecting...\n", ch.Name),
+// 			)
+// 		} else {
+// 			return ErrUnknownCharacter{id: clientId, action: command.command}
+// 		}
+// 		client.Disconnect()
+// 		s.removeClient(clientId)
+// 		return nil
+// 	}
+// }
+
+func (c *Client) Listen() {
 	reader := bufio.NewReader(c.conn)
 
-	actions <- c.registry.ConnectAction(c.id)
-	connectReply := <-c.reply
-	c.directReply(connectReply)
+	c.world.ClientJoined(
+		game.ClientId(c.id),
+		func(message string) {
+			c.reply <- message
+		},
+		func(message string) {
+			c.broadcast <- message
+		},
+	)
+	c.directReply("Connected to the server...")
+
+	// actions <- c.registry.ConnectAction(c.id)
+	// connectReply := <-c.reply
+	// c.directReply(connectReply)
+
+	// on connect create the client
+	// and put the character in the right mode withing hte
+	// these should be only concerned by creating/destroying
+	// the tcp client, all the other input syould go try to world
+
+	// Worlder needs another set of fucntions
+	// that call server side functionatilies
+	// ServerInterface Reply/Broadcast(clientid, message)
+
+	//
 
 	// this should ideally only handle the tcp connection
 	// pass the parsed message forward that would handle the rest
 	//  that would handle command registry and events
+
+	// let's lift the connect/disconnect from the game all together,
+	// it's not really a business for teh game anyway
 
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
 			// disconnect command tells the server to clean up this client
 			// the break here breaks the Listen loop
-			actions <- c.registry.DisconnectAction(c.id)
+			// actions <- c.registry.DisconnectAction(c.id)
 			<-c.reply
 			break
 		}
 
-		actions <- c.registry.InputToAction(line, c.id)
+		c.world.PassMessageToClient(line, game.ClientId(c.id))
 
-		// Wait for player's reply
+		// Wait for client's reply
 		commandReply, ok := <-c.reply
 		if !ok {
 			break
@@ -120,9 +167,4 @@ func (c *Client) Disconnect() {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func (c *Client) SetCommandRegistry(registry *CommandRegistry) {
-	// TODO: registry should probably be safed guarded agasint multi goroutine access
-	c.registry = registry
 }

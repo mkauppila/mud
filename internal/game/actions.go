@@ -1,13 +1,11 @@
-package server
+package game
 
 import (
 	"fmt"
-
-	game "github.com/mkauppila/mud/internal/game"
 )
 
-type ServerAction func(server *Server) error
-type CommandAction func(command Command, clientId ClientId) ServerAction
+type WorldAction func(w *World) error
+type CommandAction func(command Command, clientId ClientId) WorldAction
 
 type ErrUnknownClientId struct {
 	id ClientId
@@ -105,82 +103,48 @@ var inGameCommandInfos = []CommandInfo{
 	},
 }
 
-func ConnectCommandAction(command Command, clientId ClientId) ServerAction {
-	return func(s *Server) error {
-		client := s.getClient(clientId)
-		if client == nil {
+func UnknownCommandAction(command Command, clientId ClientId) WorldAction {
+	return func(w *World) error {
+		character := w.GetCharacter(clientId)
+		if character == nil {
 			return ErrUnknownClientId{id: clientId}
 		}
-		client.reply <- "Welcome! What is your name?\n"
+
+		character.Reply(fmt.Sprintf("What is %s?\n", command.contents))
 
 		return nil
 	}
 }
 
-func DisconnectCommandAction(command Command, clientId ClientId) ServerAction {
-	return func(s *Server) error {
-		client := s.getClient(clientId)
-		if client == nil {
-			return ErrUnknownClientId{id: clientId}
-		}
-
-		if ch := s.world.GetCharacter(game.ClientId(clientId)); ch != nil {
-			s.world.RemoveCharacterOnDisconnect(ch)
-			s.world.BroadcastToOtherCharactersInRoom(
-				ch,
-				fmt.Sprintf("%v disconnecting...\n", ch.Name),
-			)
-		} else {
-			return ErrUnknownCharacter{id: clientId, action: command.command}
-		}
-
-		client.Disconnect()
-		s.removeClient(clientId)
-
-		return nil
-	}
-}
-
-func UnknownCommandAction(command Command, clientId ClientId) ServerAction {
-	return func(s *Server) error {
-		client := s.getClient(clientId)
-		if client == nil {
-			return ErrUnknownClientId{id: clientId}
-		}
-
-		client.reply <- fmt.Sprintf("What is %s?\n", command.contents)
-
-		return nil
-	}
-}
-
-func NameCharacterCommandAction(command Command, clientId ClientId) ServerAction {
-	return func(s *Server) error {
-		client := s.getClient(clientId)
-		if client == nil {
-			return ErrUnknownClientId{id: clientId}
-		}
-		ch := game.NewCharacter(game.ClientId(clientId), command.contents)
-
+func NameCharacterCommandAction(command Command, clientId ClientId) WorldAction {
+	return func(world *World) error {
+		// client := w.letClient(clientId)
+		// if client == nil {
+		// 	return ErrUnknownClientId{id: clientId}
+		// }
+		// ch := NewCharacter(ClientId(clientId), command.contents)
+		ch := world.GetCharacter(clientId)
+		ch.Name = command.contents
 		// connect character with clients comms
-		ch.Reply = func(message string) {
-			client.reply <- message
-		}
-		ch.Broadcast = func(message string) {
-			client.broadcast <- message
-		}
-		client.SetCommandRegistry(NewInGameCommandRegistry())
+		// ch.Reply = func(message string) {
+		// 	client.reply <- message
+		// }
+		// ch.Broadcast = func(message string) {
+		// 	client.broadcast <- message
+		// }
+		// ch.SetCommandRegistry(NewInGameCommandRegistry())
+		ch.commands = NewInGameCommandRegistry()
 
-		s.world.InsertCharacterOnConnect(ch)
+		world.InsertCharacterOnConnect(ch)
 
 		ch.Reply(
 			fmt.Sprintf("%s woke up in the world\n%s\n",
 				ch.Name,
-				s.world.DescribeRoom(ch.Coordinate)),
+				world.DescribeRoom(ch.Coordinate)),
 		)
 		ch.SetState("idle")
 
-		s.world.BroadcastToOtherCharactersInRoom(
+		world.BroadcastToOtherCharactersInRoom(
 			ch,
 			fmt.Sprintf("%v joined!\n", ch.Name),
 		)
@@ -189,15 +153,15 @@ func NameCharacterCommandAction(command Command, clientId ClientId) ServerAction
 	}
 }
 
-func SayCommandAction(command Command, clientId ClientId) ServerAction {
-	return func(s *Server) error {
-		ch := s.world.GetCharacter(game.ClientId(clientId))
+func SayCommandAction(command Command, clientId ClientId) WorldAction {
+	return func(world *World) error {
+		ch := world.GetCharacter(ClientId(clientId))
 		if ch == nil {
 			return ErrUnknownCharacter{id: clientId, action: command.command}
 		}
 		ch.Reply(fmt.Sprintf("You said %s\n", command.contents))
 
-		s.world.BroadcastToOtherCharactersInRoom(
+		world.BroadcastToOtherCharactersInRoom(
 			ch,
 			fmt.Sprintf("%s said %s\n", ch.Name, command.contents),
 		)
@@ -206,45 +170,45 @@ func SayCommandAction(command Command, clientId ClientId) ServerAction {
 	}
 }
 
-func LookCommandAction(command Command, clientId ClientId) ServerAction {
-	return func(s *Server) error {
-		ch := s.world.GetCharacter(game.ClientId(clientId))
+func LookCommandAction(command Command, clientId ClientId) WorldAction {
+	return func(world *World) error {
+		ch := world.GetCharacter(ClientId(clientId))
 		if ch == nil {
 			return ErrUnknownCharacter{id: clientId, action: command.command}
 		}
 
-		ch.Reply(fmt.Sprintf("You look around\n%s\n", s.world.DescribeRoom(ch.Coordinate)))
+		ch.Reply(fmt.Sprintf("You look around\n%s\n", world.DescribeRoom(ch.Coordinate)))
 
 		return nil
 	}
 }
 
-func GoCommandAction(command Command, clientId ClientId) ServerAction {
-	return func(s *Server) error {
-		ch := s.world.GetCharacter(game.ClientId(clientId))
+func GoCommandAction(command Command, clientId ClientId) WorldAction {
+	return func(world *World) error {
+		ch := world.GetCharacter(ClientId(clientId))
 		if ch == nil {
 			return ErrUnknownCharacter{id: clientId, action: command.command}
 		}
 
-		direction := game.DirectionFromString(command.contents)
+		direction := DirectionFromString(command.contents)
 		if command.contents == "" {
 			ch.Reply("In which direction do you want to move?\n")
-		} else if s.world.CanCharactorMoveInDirection(ch, direction) {
+		} else if world.CanCharactorMoveInDirection(ch, direction) {
 			// broadcast to old room
-			s.world.BroadcastToOtherCharactersInRoom(
+			world.BroadcastToOtherCharactersInRoom(
 				ch,
 				fmt.Sprintf("%s moved to %s\n", ch.Name, command.contents),
 			)
 
-			s.world.MoveCharacterInDirection(ch, direction)
+			world.MoveCharacterInDirection(ch, direction)
 			ch.Reply(
 				fmt.Sprintf("You move to %s\n%s\n",
 					command.contents,
-					s.world.DescribeRoom(ch.Coordinate)),
+					world.DescribeRoom(ch.Coordinate)),
 			)
 
 			// broadcast to new room
-			s.world.BroadcastToOtherCharactersInRoom(
+			world.BroadcastToOtherCharactersInRoom(
 				ch,
 				fmt.Sprintf("%s entered from %s\n", ch.Name, command.contents),
 			)
@@ -256,11 +220,9 @@ func GoCommandAction(command Command, clientId ClientId) ServerAction {
 	}
 }
 
-func SmokeCommandAction(command Command, clientId ClientId) ServerAction {
-	return func(s *Server) error {
-		world := s.world
-
-		ch := world.GetCharacter(game.ClientId(clientId))
+func SmokeCommandAction(command Command, clientId ClientId) WorldAction {
+	return func(world *World) error {
+		ch := world.GetCharacter(ClientId(clientId))
 		if ch == nil {
 			return ErrUnknownCharacter{id: clientId, action: command.command}
 		}
@@ -290,19 +252,16 @@ func SmokeCommandAction(command Command, clientId ClientId) ServerAction {
 	}
 }
 
-func HelpCommandAction(command Command, clientId ClientId) ServerAction {
-	return func(s *Server) error {
-		client, ok := s.clients[clientId]
-		if !ok {
-			return nil
-		}
+func HelpCommandAction(command Command, clientId ClientId) WorldAction {
+	return func(world *World) error {
+		ch := world.GetCharacter(ClientId(clientId))
 
 		var output = "help:\n"
-		for _, cwd := range client.registry.CommandsWithDescriptions() {
+		for _, cwd := range ch.commands.CommandsWithDescriptions() {
 			output = fmt.Sprintf("%s\t%s\n", output, cwd)
 		}
 
-		client.reply <- output
+		ch.Reply(output)
 
 		return nil
 	}

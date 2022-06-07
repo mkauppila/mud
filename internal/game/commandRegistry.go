@@ -1,4 +1,4 @@
-package server
+package game
 
 import (
 	"fmt"
@@ -35,15 +35,7 @@ func NewInGameCommandRegistry() *CommandRegistry {
 	return NewCommandRegistry(inGameCommandInfos)
 }
 
-func (c *CommandRegistry) ConnectAction(clientId ClientId) ServerAction {
-	return ConnectCommandAction(Command{command: "connect", contents: ""}, clientId)
-}
-
-func (c *CommandRegistry) DisconnectAction(clientId ClientId) ServerAction {
-	return DisconnectCommandAction(Command{command: "disconnect", contents: ""}, clientId)
-}
-
-func (c *CommandRegistry) InputToAction(line string, clientId ClientId) ServerAction {
+func (c *CommandRegistry) InputToAction(line string, clientId ClientId) WorldAction {
 	command := c.parseCommand(line)
 
 	info, ok := c.commandInfos[command.command]

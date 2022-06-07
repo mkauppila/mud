@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/mkauppila/mud/internal/game"
 	"github.com/mkauppila/mud/internal/server"
 )
 
@@ -17,7 +18,8 @@ func main() {
 	}
 	defer ln.Close()
 
-	server := server.NewServer(server.UuidGenerator)
+	world := game.NewWorld()
+	server := server.NewServer(server.UuidGenerator, world)
 	go server.Run()
 
 	for {

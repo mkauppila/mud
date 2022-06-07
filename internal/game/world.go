@@ -5,15 +5,27 @@ import (
 	"time"
 )
 
+type Worlder interface {
+	ClientJoined(clientId ClientId, reply func(message string), broadcast func(message string))
+	ClientDisconnected(ClientId)
+	PassMessageToClient(string, ClientId)
+	RunGameLooop()
+}
+
 type World struct {
-	characters map[Coordinate][]*Character
-	rooms      map[Coordinate]Room
+	lobbyCharacters []*Character
+	characters      map[Coordinate][]*Character
+	rooms           map[Coordinate]Room
+	timeStep        time.Duration
+	actions         chan WorldAction
 }
 
 func NewWorld() *World {
 	world := &World{
 		characters: make(map[Coordinate][]*Character),
 		rooms:      make(map[Coordinate]Room),
+		timeStep:   time.Second,
+		actions:    make(chan WorldAction),
 	}
 
 	for _, room := range BasicMap() {
@@ -21,6 +33,81 @@ func NewWorld() *World {
 	}
 
 	return world
+}
+func (w *World) ClientJoined(clientId ClientId, reply func(message string), broadcast func(message string)) {
+	// func ConnectCommandAction(command Command, clientId ClientId) WorldAction {
+	// 	return func(w *World) error {
+	// 		client := s.getClient(clientId)
+	// 		if client == nil {
+	// 			return ErrUnknownClientId{id: clientId}
+	// 		}
+	// 		client.reply <- "Welcome! What is your name?\n"
+	// 		return nil
+	// 	}
+	// }
+	ch := NewCharacter(ClientId(clientId), "connected")
+	ch.commands = NewLoginCommandRegistry()
+	ch.Reply = reply
+	ch.Broadcast = broadcast
+
+	// w.lobbyCharacters = append(w.lobbyCharacters, ch)
+	w.InsertCharacterOnConnect(ch)
+	// reply("Welcome! What is your name?\n")
+}
+
+func (w *World) ClientDisconnected(clientId ClientId) {
+	ch := w.GetCharacter(clientId)
+	if ch == nil {
+		panic("no client")
+	}
+
+	w.RemoveCharacterOnDisconnect(ch)
+}
+
+func (w World) PassMessageToClient(msg string, clientId ClientId) {
+	ch := w.GetCharacter(clientId)
+	if ch == nil {
+		// for _, c := range w.lobbyCharacters {
+		// 	if c.Id == clientId {
+		// 		ch = c
+		// 	}
+		// }
+	}
+
+	fmt.Println("message, clientId ", msg, clientId)
+	cmd := ch.commands.InputToAction(msg, clientId)
+	fmt.Println("cmd: ", cmd)
+	w.actions <- cmd
+}
+
+func (w *World) RunGameLooop() {
+	ticker := time.NewTicker(w.timeStep)
+	defer ticker.Stop()
+
+	var actions []WorldAction
+	for {
+		select {
+		case command, ok := <-w.actions:
+			if !ok {
+				panic("actions channel closed")
+			}
+			actions = append(actions, command)
+		case _, ok := <-ticker.C:
+			if !ok {
+				panic("ticker closed")
+			}
+
+			for _, action := range actions {
+				err := action(w)
+				if err != nil {
+					panic(err)
+				}
+			}
+
+			w.UpdateCharacterStates(w.timeStep)
+			actions = make([]WorldAction, 0)
+		}
+	}
 }
 
 func (w World) InsertCharacterOnConnect(character *Character) {
