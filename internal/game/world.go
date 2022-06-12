@@ -7,9 +7,8 @@ import (
 
 type Worlder interface {
 	ClientJoined(clientId ClientId, reply func(message string), broadcast func(message string))
-	ClientDisconnected(ClientId)
+	ClientDisconnected(ClientId) error
 	PassMessageToClient(string, ClientId)
-	RunGameLooop()
 }
 
 type World struct {
@@ -55,32 +54,45 @@ func (w *World) ClientJoined(clientId ClientId, reply func(message string), broa
 	// reply("Welcome! What is your name?\n")
 }
 
-func (w *World) ClientDisconnected(clientId ClientId) {
-	ch := w.GetCharacter(clientId)
+func (world *World) ClientDisconnected(clientId ClientId) error {
+	ch := world.GetCharacter(clientId)
 	if ch == nil {
 		panic("no client")
 	}
 
-	w.RemoveCharacterOnDisconnect(ch)
+	if ch := world.GetCharacter(ClientId(clientId)); ch != nil {
+		world.RemoveCharacterOnDisconnect(ch)
+		world.BroadcastToOtherCharactersInRoom(
+			ch,
+			fmt.Sprintf("%v disconnecting...\n", ch.Name),
+		)
+	} else {
+		return ErrUnknownCharacter{id: clientId, action: "disconnecting"}
+	}
+
+	return nil
 }
 
-func (w World) PassMessageToClient(msg string, clientId ClientId) {
-	ch := w.GetCharacter(clientId)
+func (world *World) PassMessageToClient(msg string, clientId ClientId) {
+	// here we would need to check the state of the player (it's playr id now)
+	// and then handle the incoming message in a appropriate way
+
+	ch := world.GetCharacter(clientId)
 	if ch == nil {
 		// for _, c := range w.lobbyCharacters {
 		// 	if c.Id == clientId {
 		// 		ch = c
-		// 	}
-		// }
+		//
+		//  }
 	}
 
 	fmt.Println("message, clientId ", msg, clientId)
 	cmd := ch.commands.InputToAction(msg, clientId)
 	fmt.Println("cmd: ", cmd)
-	w.actions <- cmd
+	world.actions <- cmd
 }
 
-func (w *World) RunGameLooop() {
+func (w *World) RunGameLoop() {
 	ticker := time.NewTicker(w.timeStep)
 	defer ticker.Stop()
 

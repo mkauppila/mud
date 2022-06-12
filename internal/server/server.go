@@ -1,9 +1,9 @@
 package server
 
 import (
+	"fmt"
 	"net"
 	"sync"
-	"time"
 
 	"github.com/mkauppila/mud/internal/game"
 )
@@ -11,17 +11,15 @@ import (
 type Server struct {
 	clientsMutex sync.RWMutex
 	clients      map[ClientId]*Client
-	world        *game.World
-	timeStep     time.Duration
+	world        game.Worlder
 	idGenerator  IdGenerator
 }
 
-func NewServer(idGenerator IdGenerator, world *game.World) Server {
+func NewServer(idGenerator IdGenerator, world game.Worlder) Server {
 	return Server{
 		clientsMutex: sync.RWMutex{},
 		clients:      make(map[ClientId]*Client),
 		world:        world,
-		timeStep:     time.Second,
 		idGenerator:  idGenerator,
 	}
 }
@@ -60,6 +58,27 @@ func (s *Server) getClient(id ClientId) *Client {
 	}
 }
 
-func (s *Server) Run() {
-	go s.world.RunGameLooop()
+func (s *Server) StartAcceptingConnections() {
+	address := "localhost:6000"
+	fmt.Printf("starting at %s\n", address)
+
+	ln, err := net.Listen("tcp", address)
+	if err != nil {
+		panic(err)
+	}
+	defer ln.Close()
+
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			panic(err)
+		}
+
+		go func() {
+			err := s.AddNewClient(conn)
+			if err != nil {
+				panic(err)
+			}
+		}()
+	}
 }

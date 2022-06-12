@@ -2,39 +2,31 @@ package main
 
 import (
 	"fmt"
-	"net"
+	"os"
+	"os/signal"
 
 	"github.com/mkauppila/mud/internal/game"
 	"github.com/mkauppila/mud/internal/server"
 )
 
 func main() {
-	address := "localhost:6000"
-	fmt.Printf("starting at %s\n", address)
+	exitC := make(chan struct{})
 
-	ln, err := net.Listen("tcp", address)
-	if err != nil {
-		panic(err)
-	}
-	defer ln.Close()
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt, os.Kill)
+	go func() {
+		for sig := range signals {
+			fmt.Println("Going to shut down due to: ", sig)
+			exitC <- struct{}{}
+		}
+	}()
 
 	world := game.NewWorld()
 	server := server.NewServer(server.UuidGenerator, world)
-	go server.Run()
+	go server.StartAcceptingConnections()
+	go world.RunGameLoop()
 
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			panic(err)
-		}
-
-		go func() {
-			err := server.AddNewClient(conn)
-			if err != nil {
-				panic(err)
-			}
-		}()
-	}
+	<-exitC
 
 	// server.Disconnect()
 	// for _, client := range clients {

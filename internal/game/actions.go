@@ -118,21 +118,8 @@ func UnknownCommandAction(command Command, clientId ClientId) WorldAction {
 
 func NameCharacterCommandAction(command Command, clientId ClientId) WorldAction {
 	return func(world *World) error {
-		// client := w.letClient(clientId)
-		// if client == nil {
-		// 	return ErrUnknownClientId{id: clientId}
-		// }
-		// ch := NewCharacter(ClientId(clientId), command.contents)
 		ch := world.GetCharacter(clientId)
 		ch.Name = command.contents
-		// connect character with clients comms
-		// ch.Reply = func(message string) {
-		// 	client.reply <- message
-		// }
-		// ch.Broadcast = func(message string) {
-		// 	client.broadcast <- message
-		// }
-		// ch.SetCommandRegistry(NewInGameCommandRegistry())
 		ch.commands = NewInGameCommandRegistry()
 
 		world.InsertCharacterOnConnect(ch)
