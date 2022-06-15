@@ -47,13 +47,15 @@ func (c *Client) Listen() {
 	c.world.ClientJoined(
 		game.ClientId(c.id),
 		func(message string) {
+			c.directReply(message)
+		},
+		func(message string) {
 			c.reply <- message
 		},
 		func(message string) {
 			c.broadcast <- message
 		},
 	)
-	c.directReply("Connected to the server...")
 
 	for {
 		line, err := reader.ReadString('\n')

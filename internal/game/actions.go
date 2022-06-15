@@ -5,7 +5,7 @@ import (
 )
 
 type WorldAction func(w *World) error
-type CommandAction func(command Command, clientId ClientId) WorldAction
+type CommandAction func(command Command, ch *Character) WorldAction
 
 type ErrUnknownClientId struct {
 	id ClientId
@@ -30,18 +30,6 @@ type CommandInfo struct {
 	description string
 	parser      func(command, rest string) Command
 	action      CommandAction
-}
-
-var loginCommandInfos = []CommandInfo{
-	{
-		command:     "choose",
-		aliases:     []string{},
-		description: "Choose a character name",
-		parser: func(command, rest string) Command {
-			return Command{"choose", rest}
-		},
-		action: NameCharacterCommandAction,
-	},
 }
 
 var inGameCommandInfos = []CommandInfo{
@@ -103,49 +91,16 @@ var inGameCommandInfos = []CommandInfo{
 	},
 }
 
-func UnknownCommandAction(command Command, clientId ClientId) WorldAction {
+func UnknownCommandAction(command Command, ch *Character) WorldAction {
 	return func(w *World) error {
-		character := w.GetCharacter(clientId)
-		if character == nil {
-			return ErrUnknownClientId{id: clientId}
-		}
-
-		character.Reply(fmt.Sprintf("What is %s?\n", command.contents))
+		ch.Reply(fmt.Sprintf("What is %s?\n", command.contents))
 
 		return nil
 	}
 }
 
-func NameCharacterCommandAction(command Command, clientId ClientId) WorldAction {
+func SayCommandAction(command Command, ch *Character) WorldAction {
 	return func(world *World) error {
-		ch := world.GetCharacter(clientId)
-		ch.Name = command.contents
-		ch.commands = NewInGameCommandRegistry()
-
-		world.InsertCharacterOnConnect(ch)
-
-		ch.Reply(
-			fmt.Sprintf("%s woke up in the world\n%s\n",
-				ch.Name,
-				world.DescribeRoom(ch.Coordinate)),
-		)
-		ch.SetState("idle")
-
-		world.BroadcastToOtherCharactersInRoom(
-			ch,
-			fmt.Sprintf("%v joined!\n", ch.Name),
-		)
-
-		return nil
-	}
-}
-
-func SayCommandAction(command Command, clientId ClientId) WorldAction {
-	return func(world *World) error {
-		ch := world.GetCharacter(ClientId(clientId))
-		if ch == nil {
-			return ErrUnknownCharacter{id: clientId, action: command.command}
-		}
 		ch.Reply(fmt.Sprintf("You said %s\n", command.contents))
 
 		world.BroadcastToOtherCharactersInRoom(
@@ -157,26 +112,16 @@ func SayCommandAction(command Command, clientId ClientId) WorldAction {
 	}
 }
 
-func LookCommandAction(command Command, clientId ClientId) WorldAction {
+func LookCommandAction(command Command, ch *Character) WorldAction {
 	return func(world *World) error {
-		ch := world.GetCharacter(ClientId(clientId))
-		if ch == nil {
-			return ErrUnknownCharacter{id: clientId, action: command.command}
-		}
-
 		ch.Reply(fmt.Sprintf("You look around\n%s\n", world.DescribeRoom(ch.Coordinate)))
 
 		return nil
 	}
 }
 
-func GoCommandAction(command Command, clientId ClientId) WorldAction {
+func GoCommandAction(command Command, ch *Character) WorldAction {
 	return func(world *World) error {
-		ch := world.GetCharacter(ClientId(clientId))
-		if ch == nil {
-			return ErrUnknownCharacter{id: clientId, action: command.command}
-		}
-
 		direction := DirectionFromString(command.contents)
 		if command.contents == "" {
 			ch.Reply("In which direction do you want to move?\n")
@@ -207,13 +152,8 @@ func GoCommandAction(command Command, clientId ClientId) WorldAction {
 	}
 }
 
-func SmokeCommandAction(command Command, clientId ClientId) WorldAction {
+func SmokeCommandAction(command Command, ch *Character) WorldAction {
 	return func(world *World) error {
-		ch := world.GetCharacter(ClientId(clientId))
-		if ch == nil {
-			return ErrUnknownCharacter{id: clientId, action: command.command}
-		}
-
 		switch command.contents {
 		case "start":
 			ch.SetState("smoking")
@@ -239,10 +179,8 @@ func SmokeCommandAction(command Command, clientId ClientId) WorldAction {
 	}
 }
 
-func HelpCommandAction(command Command, clientId ClientId) WorldAction {
+func HelpCommandAction(command Command, ch *Character) WorldAction {
 	return func(world *World) error {
-		ch := world.GetCharacter(ClientId(clientId))
-
 		var output = "help:\n"
 		for _, cwd := range ch.commands.CommandsWithDescriptions() {
 			output = fmt.Sprintf("%s\t%s\n", output, cwd)

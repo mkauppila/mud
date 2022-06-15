@@ -6,17 +6,31 @@ import (
 )
 
 type Worlder interface {
-	ClientJoined(clientId ClientId, reply func(message string), broadcast func(message string))
+	ClientJoined(
+		clientId ClientId,
+		directReply func(message string),
+		reply func(message string),
+		broadcast func(message string),
+	)
 	ClientDisconnected(ClientId) error
 	PassMessageToClient(string, ClientId)
 }
 
 type World struct {
-	lobbyCharacters []*Character
-	characters      map[Coordinate][]*Character
-	rooms           map[Coordinate]Room
-	timeStep        time.Duration
-	actions         chan WorldAction
+	accounts   []*Account
+	characters map[Coordinate][]*Character
+	rooms      map[Coordinate]Room
+	timeStep   time.Duration
+	actions    chan WorldAction
+}
+
+func (w *World) GetAccount(clientId ClientId) *Account {
+	for _, a := range w.accounts {
+		if a.id == clientId {
+			return a
+		}
+	}
+	return nil
 }
 
 func NewWorld() *World {
@@ -25,6 +39,7 @@ func NewWorld() *World {
 		rooms:      make(map[Coordinate]Room),
 		timeStep:   time.Second,
 		actions:    make(chan WorldAction),
+		accounts:   make([]*Account, 0),
 	}
 
 	for _, room := range BasicMap() {
@@ -33,63 +48,75 @@ func NewWorld() *World {
 
 	return world
 }
-func (w *World) ClientJoined(clientId ClientId, reply func(message string), broadcast func(message string)) {
-	// func ConnectCommandAction(command Command, clientId ClientId) WorldAction {
-	// 	return func(w *World) error {
-	// 		client := s.getClient(clientId)
-	// 		if client == nil {
-	// 			return ErrUnknownClientId{id: clientId}
-	// 		}
-	// 		client.reply <- "Welcome! What is your name?\n"
-	// 		return nil
-	// 	}
-	// }
-	ch := NewCharacter(ClientId(clientId), "connected")
-	ch.commands = NewLoginCommandRegistry()
-	ch.Reply = reply
-	ch.Broadcast = broadcast
 
-	// w.lobbyCharacters = append(w.lobbyCharacters, ch)
-	w.InsertCharacterOnConnect(ch)
-	// reply("Welcome! What is your name?\n")
+func (w *World) ClientJoined(
+	clientId ClientId,
+	directReply func(messasage string),
+	reply func(message string),
+	broadcast func(message string),
+) {
+	account := NewAccount(clientId, directReply, reply, broadcast)
+	w.accounts = append(w.accounts, account)
+	account.directReply("What's the character?\n > \n")
 }
 
 func (world *World) ClientDisconnected(clientId ClientId) error {
-	ch := world.GetCharacter(clientId)
-	if ch == nil {
-		panic("no client")
+	account := world.GetAccount(clientId)
+	if ch := account.loggedInCharacter; ch != nil {
+		if ch := world.GetCharacter(ClientId(clientId)); ch != nil {
+			world.RemoveCharacterOnDisconnect(ch)
+			world.BroadcastToOtherCharactersInRoom(
+				ch,
+				fmt.Sprintf("%v disconnecting...\n", ch.Name),
+			)
+		} else {
+			return ErrUnknownCharacter{id: clientId, action: "disconnecting"}
+		}
 	}
 
-	if ch := world.GetCharacter(ClientId(clientId)); ch != nil {
-		world.RemoveCharacterOnDisconnect(ch)
-		world.BroadcastToOtherCharactersInRoom(
-			ch,
-			fmt.Sprintf("%v disconnecting...\n", ch.Name),
-		)
-	} else {
-		return ErrUnknownCharacter{id: clientId, action: "disconnecting"}
+	for i, acc := range world.accounts {
+		if acc.id == clientId {
+			world.accounts[i] = world.accounts[len(world.accounts)-1]
+			world.accounts = world.accounts[:len(world.accounts)-1]
+
+			break
+		}
 	}
 
 	return nil
 }
 
+func (world *World) handleAccountMessage(account *Account, msg string) {
+	ch := NewCharacter(ClientId(account.id), msg)
+	ch.commands = NewInGameCommandRegistry()
+	ch.Reply = account.reply
+	ch.Broadcast = account.broadcast
+	ch.SetState("idle")
+	account.loggedInCharacter = ch
+	world.InsertCharacterOnConnect(ch)
+
+	world.BroadcastToOtherCharactersInRoom(
+		ch,
+		fmt.Sprintf("%v joined!\n", ch.Name),
+	)
+
+	action := ch.commands.InputToAction("look", account.loggedInCharacter)
+	world.actions <- action
+}
+
+func (w *World) handleCharacterMessasge(ch *Character, msg string) {
+	action := ch.commands.InputToAction(msg, ch)
+	w.actions <- action
+}
+
 func (world *World) PassMessageToClient(msg string, clientId ClientId) {
-	// here we would need to check the state of the player (it's playr id now)
-	// and then handle the incoming message in a appropriate way
-
-	ch := world.GetCharacter(clientId)
-	if ch == nil {
-		// for _, c := range w.lobbyCharacters {
-		// 	if c.Id == clientId {
-		// 		ch = c
-		//
-		//  }
+	if account := world.GetAccount(clientId); account != nil {
+		if account.loggedInCharacter != nil {
+			world.handleCharacterMessasge(account.loggedInCharacter, msg)
+		} else {
+			world.handleAccountMessage(account, msg)
+		}
 	}
-
-	fmt.Println("message, clientId ", msg, clientId)
-	cmd := ch.commands.InputToAction(msg, clientId)
-	fmt.Println("cmd: ", cmd)
-	world.actions <- cmd
 }
 
 func (w *World) RunGameLoop() {
@@ -122,7 +149,7 @@ func (w *World) RunGameLoop() {
 	}
 }
 
-func (w World) InsertCharacterOnConnect(character *Character) {
+func (w *World) InsertCharacterOnConnect(character *Character) {
 	loc := character.Coordinate
 
 	list, ok := w.characters[loc]
@@ -134,7 +161,7 @@ func (w World) InsertCharacterOnConnect(character *Character) {
 	}
 }
 
-func (w World) OtherCharactersInRoom(currentCharacter *Character) []*Character {
+func (w *World) OtherCharactersInRoom(currentCharacter *Character) []*Character {
 	inRoom := w.characters[currentCharacter.Coordinate]
 
 	var others []*Character
@@ -146,7 +173,7 @@ func (w World) OtherCharactersInRoom(currentCharacter *Character) []*Character {
 	return others
 }
 
-func (w World) BroadcastToOtherCharactersInRoom(currentCh *Character, message string) {
+func (w *World) BroadcastToOtherCharactersInRoom(currentCh *Character, message string) {
 	inRoom := w.characters[currentCh.Coordinate]
 
 	for _, ch := range inRoom {
@@ -167,7 +194,7 @@ func (w World) GetCharacter(id ClientId) *Character {
 	return nil
 }
 
-func (w World) RemoveCharacterOnDisconnect(ch *Character) {
+func (w *World) RemoveCharacterOnDisconnect(ch *Character) {
 	// remove the disconnecting ch from the room
 	chs := w.characters[ch.Coordinate]
 	for i, c := range chs {

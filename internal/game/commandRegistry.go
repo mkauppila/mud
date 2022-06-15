@@ -27,22 +27,18 @@ func NewCommandRegistry(givenCommandInfo []CommandInfo) *CommandRegistry {
 	return registry
 }
 
-func NewLoginCommandRegistry() *CommandRegistry {
-	return NewCommandRegistry(loginCommandInfos)
-}
-
 func NewInGameCommandRegistry() *CommandRegistry {
 	return NewCommandRegistry(inGameCommandInfos)
 }
 
-func (c *CommandRegistry) InputToAction(line string, clientId ClientId) WorldAction {
+func (c *CommandRegistry) InputToAction(line string, ch *Character) WorldAction {
 	command := c.parseCommand(line)
 
 	info, ok := c.commandInfos[command.command]
 	if ok {
-		return info.action(command, clientId)
+		return info.action(command, ch)
 	} else {
-		return UnknownCommandAction(command, clientId)
+		return UnknownCommandAction(command, ch)
 	}
 }
 
